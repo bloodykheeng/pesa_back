@@ -8,9 +8,14 @@ use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
 //============== cors handler ================================
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, Authorization, Accept,charset,boundary,Content-Length');
+// header('Access-Control-Allow-Origin: *');
+// header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
+// header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, Authorization, Accept,charset,boundary,Content-Length');
+
+//====================== testing ========================
+Route::get('testing', function () {
+    return response()->json(['message' => 'testing indeed']);
+});
 
 /// Public Routes
 Route::post('/register', [AuthController::class, 'register']);

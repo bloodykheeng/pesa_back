@@ -41,3 +41,5 @@ yarn-error.log
 /public/vendor_photos/*
 /public/dashboard_slider_photos/*
 
+
+.vercel

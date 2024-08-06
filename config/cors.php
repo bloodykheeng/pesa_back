@@ -15,17 +15,17 @@ return [
     |
      */
 
-    // 'paths' => ['api/*', 'sanctum/csrf-cookie'],
-    'paths' => ['*'],
+    'paths' => ['api/*', 'api/api/*', 'sanctum/csrf-cookie', '*'],
+    // 'paths' => ['*'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['POST', 'GET', 'DELETE', 'PUT', '*'],
 
     // 'allowed_origins' => ['*'],
-    'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'http://localhost:3000/'],
+    'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'https://aws-0-eu-central-1.pooler.supabase.com/', 'http://localhost:3000/', '*'],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => ['*'],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => ['X-Custom-Header', 'Upgrade-Insecure-Requests', '*'],
 
     'exposed_headers' => [],
 
