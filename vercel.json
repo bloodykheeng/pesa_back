@@ -30,8 +30,9 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
-        "APP_URL": "https://your.url.from.vercel.app",
         "APP_KEY": "base64:dwBCYPuXvsyZwDM5ZQTS72UnY7P5ClkQhIGfr2wT1BQ=",
+        "APP_URL": "https://pesa-back.vercel.app",
+        "FRONTEND_URL": "https://elevate-pesa.vercel.app",
 
         "DB_CONNECTION": "pgsql",
         "DB_HOST": "aws-0-eu-central-1.pooler.supabase.com",
