@@ -43,3 +43,11 @@ yarn-error.log
 
 
 .vercel
+
+
+/public/accessory_photos/*
+/public/brand_photos/*
+/public/product_photos/*
+/public/blog_photos/*
+/public/category_photos/*
+
