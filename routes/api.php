@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Controllers\API\BrandAccessoryController;
+use App\Http\Controllers\API\CategoryBrandController;
+use App\Http\Controllers\API\CategoryBrandOptionController;
+use App\Http\Controllers\API\CategoryBrandOptionProductController;
+use App\Http\Controllers\API\ExploreCategoryBlogController;
+use App\Http\Controllers\API\ExploreCategoryController;
+use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
@@ -41,7 +48,16 @@ Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNe
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
-        // Vendor routes
+        //==================  product routes ============================
+        Route::resource('product-categories', ProductCategoryController::class);
+        Route::resource('category-brands', CategoryBrandController::class);
+        Route::resource('brand-accessories', BrandAccessoryController::class);
+        Route::resource('category-brand-options', CategoryBrandOptionController::class);
+        Route::resource('category-brand-option-products', CategoryBrandOptionProductController::class);
+
+        // =============  explore section routes =============
+        Route::resource('explore-categories', ExploreCategoryController::class);
+        Route::resource('explore-category-blogs', ExploreCategoryBlogController::class);
 
         //======================== User Management =================================
         Route::Resource('users', UserController::class);
