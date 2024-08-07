@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Controllers\API\BrandAccessoryController;
+use App\Http\Controllers\API\CategoryBrandController;
+use App\Http\Controllers\API\CategoryBrandOptionController;
+use App\Http\Controllers\API\CategoryBrandOptionProductController;
+use App\Http\Controllers\API\ExploreCategoryBlogController;
+use App\Http\Controllers\API\ExploreCategoryController;
+use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
@@ -7,7 +14,17 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
-// Public Routes
+//============== cors handler ================================
+// header('Access-Control-Allow-Origin: *');
+// header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
+// header('Access-Control-Allow-Headers: Origin, Content-Type, X-Auth-Token, Authorization, Accept,charset,boundary,Content-Length');
+
+//====================== testing ========================
+Route::get('testing', function () {
+    return response()->json(['message' => 'testing indeed']);
+});
+
+/// Public Routes
 Route::post('/register', [AuthController::class, 'register']);
 // Route::post('/login', [AuthController::class, 'login']);
 
@@ -31,7 +48,16 @@ Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNe
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
-        // Vendor routes
+        //==================  product routes ============================
+        Route::resource('product-categories', ProductCategoryController::class);
+        Route::resource('category-brands', CategoryBrandController::class);
+        Route::resource('brand-accessories', BrandAccessoryController::class);
+        Route::resource('category-brand-options', CategoryBrandOptionController::class);
+        Route::resource('category-brand-option-products', CategoryBrandOptionProductController::class);
+
+        // =============  explore section routes =============
+        Route::resource('explore-categories', ExploreCategoryController::class);
+        Route::resource('explore-category-blogs', ExploreCategoryBlogController::class);
 
         //======================== User Management =================================
         Route::Resource('users', UserController::class);
@@ -41,10 +67,10 @@ Route::group(
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
 
-          // Sync permision to roles
-          Route::get('roles-with-modified-permissions', [UserRolesController::class, 'getRolesWithModifiedPermissions']);
+        // Sync permision to roles
+        Route::get('roles-with-modified-permissions', [UserRolesController::class, 'getRolesWithModifiedPermissions']);
 
-          Route::post('sync-permissions-to-role', [UserRolesController::class, 'syncPermissionsToRole']);
+        Route::post('sync-permissions-to-role', [UserRolesController::class, 'syncPermissionsToRole']);
 
         Route::Resource('users-roles', UserRolesController::class);
         Route::Post('users-roles-addPermissionsToRole', [UserRolesController::class, 'addPermissionsToRole']);

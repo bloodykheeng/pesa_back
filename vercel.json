@@ -4,6 +4,7 @@
     "functions": {
         "api/index.php": { "runtime": "vercel-php@0.6.1" }
     },
+
     "routes": [
         {
             "src": "/(.*)",
@@ -13,8 +14,16 @@
     "env": {
         "APP_ENV": "production",
         "APP_DEBUG": "true",
-        "APP_URL": "https://your.url.from.vercel.app",
         "APP_KEY": "base64:dwBCYPuXvsyZwDM5ZQTS72UnY7P5ClkQhIGfr2wT1BQ=",
+        "APP_URL": "https://pesa-back.vercel.app",
+        "FRONTEND_URL": "https://elevate-pesa.vercel.app",
+
+        "DB_CONNECTION": "pgsql",
+        "DB_HOST": "aws-0-eu-central-1.pooler.supabase.com",
+        "DB_PORT": "6543",
+        "DB_DATABASE": "postgres",
+        "DB_USERNAME": "postgres.eiyvvyesppbsymchiphs",
+        "DB_PASSWORD": "taroieuvCyrN9RT1",
 
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
