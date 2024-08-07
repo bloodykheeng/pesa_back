@@ -34,6 +34,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'update',
                 'delete',
             ],
+            'Buyer' => [
+                'view',
+            ],
             // 'Patient' => [
             //     'view',
             //     'create',
