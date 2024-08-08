@@ -7,6 +7,7 @@ use App\Models\CategoryBrand;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class CategoryBrandController extends Controller
 {
@@ -34,32 +35,33 @@ class CategoryBrandController extends Controller
             'details' => 'nullable|string',
             'product_categories_id' => 'required|exists:product_categories,id',
         ]);
-
-        $photoUrl = null;
+    
+        $photoData = null;
         if ($request->hasFile('photo')) {
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'brand_photos');
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'brand_photos');
         }
-
+    
         $brand = CategoryBrand::create([
             'name' => $validated['name'],
-            'photo_url' => $photoUrl,
+            'photo_url' => $photoData['photo_url'] ?? null,
+            'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
             'product_categories_id' => $validated['product_categories_id'],
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
-
+    
         return response()->json(['message' => 'Category Brand created successfully', 'data' => $brand], 201);
     }
-
+    
     public function update(Request $request, $id)
     {
         $brand = CategoryBrand::find($id);
         if (!$brand) {
             return response()->json(['message' => 'Category Brand not found'], 404);
         }
-
+    
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -67,52 +69,79 @@ class CategoryBrandController extends Controller
             'details' => 'nullable|string',
             'product_categories_id' => 'sometimes|required|exists:product_categories,id',
         ]);
-
+    
         if ($request->hasFile('photo')) {
-            if ($brand->photo_url) {
-                $this->deletePhoto($brand->photo_url);
+            if ($brand->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($brand->cloudinary_photo_public_id);
+            } elseif ($brand->photo_url) {
+                $this->deleteLocalPhoto($brand->photo_url);
             }
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'brand_photos');
-            $validated['photo_url'] = $photoUrl;
+    
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'brand_photos');
+            $validated['photo_url'] = $photoData['photo_url'];
+            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'];
         }
-
+    
         $validated['updated_by'] = Auth::id();
-
+    
         $brand->update($validated);
-
+    
         return response()->json(['message' => 'Category Brand updated successfully', 'data' => $brand]);
     }
-
+    
     public function destroy($id)
     {
         $brand = CategoryBrand::find($id);
         if (!$brand) {
             return response()->json(['message' => 'Category Brand not found'], 404);
         }
-
-        if ($brand->photo_url) {
-            $this->deletePhoto($brand->photo_url);
+    
+        if ($brand->cloudinary_photo_public_id) {
+            $this->deleteCloudinaryPhoto($brand->cloudinary_photo_public_id);
+        } elseif ($brand->photo_url) {
+            $this->deleteLocalPhoto($brand->photo_url);
         }
-
+    
         $brand->delete();
-
+    
         return response()->json(null, 204);
     }
-
-    private function uploadPhoto($photo, $folderPath)
+    
+    private function handlePhotoUpload($photo, $folderPath)
     {
-        $publicPath = public_path($folderPath);
-        if (!File::exists($publicPath)) {
-            File::makeDirectory($publicPath, 0777, true, true);
+        if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
+            $uploadedFileUrl = Cloudinary::upload($photo->getRealPath(), [
+                'folder' => $folderPath,
+            ])->getSecurePath();
+    
+            $publicId = Cloudinary::getPublicId($uploadedFileUrl);
+    
+            return [
+                'photo_url' => $uploadedFileUrl,
+                'cloudinary_photo_public_id' => $publicId,
+            ];
+        } else {
+            $publicPath = public_path($folderPath);
+            if (!File::exists($publicPath)) {
+                File::makeDirectory($publicPath, 0777, true, true);
+            }
+    
+            $fileName = time() . '_' . $photo->getClientOriginalName();
+            $photo->move($publicPath, $fileName);
+    
+            return [
+                'photo_url' => '/' . $folderPath . '/' . $fileName,
+                'cloudinary_photo_public_id' => null,
+            ];
         }
-
-        $fileName = time() . '_' . $photo->getClientOriginalName();
-        $photo->move($publicPath, $fileName);
-
-        return '/' . $folderPath . '/' . $fileName;
     }
-
-    private function deletePhoto($photoUrl)
+    
+    private function deleteCloudinaryPhoto($publicId)
+    {
+        Cloudinary::destroy($publicId);
+    }
+    
+    private function deleteLocalPhoto($photoUrl)
     {
         $photoPath = parse_url($photoUrl, PHP_URL_PATH);
         $photoPath = public_path($photoPath);
@@ -120,4 +149,5 @@ class CategoryBrandController extends Controller
             File::delete($photoPath);
         }
     }
+    
 }

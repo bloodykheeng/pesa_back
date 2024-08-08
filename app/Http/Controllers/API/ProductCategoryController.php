@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProductCategory;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -34,19 +35,15 @@ class ProductCategoryController extends Controller
             'details' => 'nullable|string',
         ]);
 
-        $photoUrl = null;
-        if ($request->hasFile('photo')) {
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'category_photos');
-        }
+        $photoData = $this->handlePhotoUpload($request->file('photo'), 'category_photos');
 
-        $category = ProductCategory::create([
+        $category = ProductCategory::create(array_merge([
             'name' => $validated['name'],
-            'photo_url' => $photoUrl,
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
-        ]);
+        ], $photoData));
 
         return response()->json(['message' => 'Product Category created successfully', 'data' => $category], 201);
     }
@@ -66,15 +63,19 @@ class ProductCategoryController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            if ($category->photo_url) {
-                $this->deletePhoto($category->photo_url);
+            // Delete existing photo
+            if ($category->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($category->cloudinary_photo_public_id);
+            } elseif ($category->photo_url) {
+                $this->deleteLocalPhoto($category->photo_url);
             }
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'category_photos');
-            $validated['photo_url'] = $photoUrl;
+
+            // Upload new photo
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'category_photos');
+            $validated = array_merge($validated, $photoData);
         }
 
         $validated['updated_by'] = Auth::id();
-
         $category->update($validated);
 
         return response()->json(['message' => 'Product Category updated successfully', 'data' => $category]);
@@ -87,8 +88,10 @@ class ProductCategoryController extends Controller
             return response()->json(['message' => 'Product Category not found'], 404);
         }
 
-        if ($category->photo_url) {
-            $this->deletePhoto($category->photo_url);
+        if ($category->cloudinary_photo_public_id) {
+            $this->deleteCloudinaryPhoto($category->cloudinary_photo_public_id);
+        } elseif ($category->photo_url) {
+            $this->deleteLocalPhoto($category->photo_url);
         }
 
         $category->delete();
@@ -96,7 +99,29 @@ class ProductCategoryController extends Controller
         return response()->json(null, 204);
     }
 
-    private function uploadPhoto($photo, $folderPath)
+    //=================== upload Photos Helper functions ==========================
+
+    private function handlePhotoUpload($photo, $folderPath)
+    {
+        if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
+            return $this->uploadToCloudinary($photo, $folderPath);
+        } else {
+            return $this->uploadToLocal($photo, $folderPath);
+        }
+    }
+
+    private function uploadToCloudinary($photo, $folderPath)
+    {
+        $uploadedFile = Cloudinary::upload($photo->getRealPath(), [
+            'folder' => $folderPath,
+        ]);
+        return [
+            'cloudinary_photo_url' => $uploadedFile->getSecurePath(),
+            'cloudinary_photo_public_id' => $uploadedFile->getPublicId(),
+        ];
+    }
+
+    private function uploadToLocal($photo, $folderPath)
     {
         $publicPath = public_path($folderPath);
         if (!File::exists($publicPath)) {
@@ -106,10 +131,17 @@ class ProductCategoryController extends Controller
         $fileName = time() . '_' . $photo->getClientOriginalName();
         $photo->move($publicPath, $fileName);
 
-        return '/' . $folderPath . '/' . $fileName;
+        return [
+            'photo_url' => '/' . $folderPath . '/' . $fileName,
+        ];
     }
 
-    private function deletePhoto($photoUrl)
+    private function deleteCloudinaryPhoto($publicId)
+    {
+        Cloudinary::destroy($publicId);
+    }
+
+    private function deleteLocalPhoto($photoUrl)
     {
         $photoPath = parse_url($photoUrl, PHP_URL_PATH);
         $photoPath = public_path($photoPath);

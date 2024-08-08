@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExploreCategoryBlog;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -35,16 +36,17 @@ class ExploreCategoryBlogController extends Controller
             'explore_categories_id' => 'required|exists:explore_categories,id',
         ]);
 
-        $photoUrl = null;
+        $photoData = null;
         if ($request->hasFile('photo')) {
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'blog_photos');
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'blog_photos');
         }
 
         $blog = ExploreCategoryBlog::create([
             'name' => $validated['name'],
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
-            'photo_url' => $photoUrl,
+            'photo_url' => $photoData['photo_url'] ?? null,
+            'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'explore_categories_id' => $validated['explore_categories_id'],
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
@@ -69,11 +71,15 @@ class ExploreCategoryBlogController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            if ($blog->photo_url) {
-                $this->deletePhoto($blog->photo_url);
+            if ($blog->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($blog->cloudinary_photo_public_id);
+            } elseif ($blog->photo_url) {
+                $this->deleteLocalPhoto($blog->photo_url);
             }
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'blog_photos');
-            $validated['photo_url'] = $photoUrl;
+
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'blog_photos');
+            $validated['photo_url'] = $photoData['photo_url'];
+            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'];
         }
 
         $validated['updated_by'] = Auth::id();
@@ -90,8 +96,10 @@ class ExploreCategoryBlogController extends Controller
             return response()->json(['message' => 'Explore Category Blog not found'], 404);
         }
 
-        if ($blog->photo_url) {
-            $this->deletePhoto($blog->photo_url);
+        if ($blog->cloudinary_photo_public_id) {
+            $this->deleteCloudinaryPhoto($blog->cloudinary_photo_public_id);
+        } elseif ($blog->photo_url) {
+            $this->deleteLocalPhoto($blog->photo_url);
         }
 
         $blog->delete();
@@ -99,20 +107,41 @@ class ExploreCategoryBlogController extends Controller
         return response()->json(null, 204);
     }
 
-    private function uploadPhoto($photo, $folderPath)
+    private function handlePhotoUpload($photo, $folderPath)
     {
-        $publicPath = public_path($folderPath);
-        if (!File::exists($publicPath)) {
-            File::makeDirectory($publicPath, 0777, true, true);
+        if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
+            $uploadedFileUrl = Cloudinary::upload($photo->getRealPath(), [
+                'folder' => $folderPath,
+            ])->getSecurePath();
+
+            $publicId = Cloudinary::getPublicId($uploadedFileUrl);
+
+            return [
+                'photo_url' => $uploadedFileUrl,
+                'cloudinary_photo_public_id' => $publicId,
+            ];
+        } else {
+            $publicPath = public_path($folderPath);
+            if (!File::exists($publicPath)) {
+                File::makeDirectory($publicPath, 0777, true, true);
+            }
+
+            $fileName = time() . '_' . $photo->getClientOriginalName();
+            $photo->move($publicPath, $fileName);
+
+            return [
+                'photo_url' => '/' . $folderPath . '/' . $fileName,
+                'cloudinary_photo_public_id' => null,
+            ];
         }
-
-        $fileName = time() . '_' . $photo->getClientOriginalName();
-        $photo->move($publicPath, $fileName);
-
-        return '/' . $folderPath . '/' . $fileName;
     }
 
-    private function deletePhoto($photoUrl)
+    private function deleteCloudinaryPhoto($publicId)
+    {
+        Cloudinary::destroy($publicId);
+    }
+
+    private function deleteLocalPhoto($photoUrl)
     {
         $photoPath = parse_url($photoUrl, PHP_URL_PATH);
         $photoPath = public_path($photoPath);
@@ -120,4 +149,5 @@ class ExploreCategoryBlogController extends Controller
             File::delete($photoPath);
         }
     }
+
 }

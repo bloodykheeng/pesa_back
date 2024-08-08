@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\BrandAccessory;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
@@ -37,15 +38,16 @@ class BrandAccessoryController extends Controller
             'category_brands_id' => 'required|exists:category_brands,id',
         ]);
 
-        $photoUrl = null;
+        $photoData = null;
         if ($request->hasFile('photo')) {
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'accessory_photos');
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'accessory_photos');
         }
 
         $accessory = BrandAccessory::create([
             'name' => $validated['name'],
             'status' => $validated['status'] ?? 'active',
-            'photo_url' => $photoUrl,
+            'photo_url' => $photoData['photo_url'] ?? null,
+            'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'price' => $validated['price'],
             'quantity' => $validated['quantity'],
             'details' => $validated['details'],
@@ -75,11 +77,15 @@ class BrandAccessoryController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            if ($accessory->photo_url) {
-                $this->deletePhoto($accessory->photo_url);
+            if ($accessory->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($accessory->cloudinary_photo_public_id);
+            } elseif ($accessory->photo_url) {
+                $this->deleteLocalPhoto($accessory->photo_url);
             }
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'accessory_photos');
-            $validated['photo_url'] = $photoUrl;
+
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'accessory_photos');
+            $validated['photo_url'] = $photoData['photo_url'];
+            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'];
         }
 
         $validated['updated_by'] = Auth::id();
@@ -96,8 +102,10 @@ class BrandAccessoryController extends Controller
             return response()->json(['message' => 'Brand Accessory not found'], 404);
         }
 
-        if ($accessory->photo_url) {
-            $this->deletePhoto($accessory->photo_url);
+        if ($accessory->cloudinary_photo_public_id) {
+            $this->deleteCloudinaryPhoto($accessory->cloudinary_photo_public_id);
+        } elseif ($accessory->photo_url) {
+            $this->deleteLocalPhoto($accessory->photo_url);
         }
 
         $accessory->delete();
@@ -105,20 +113,41 @@ class BrandAccessoryController extends Controller
         return response()->json(null, 204);
     }
 
-    private function uploadPhoto($photo, $folderPath)
+    private function handlePhotoUpload($photo, $folderPath)
     {
-        $publicPath = public_path($folderPath);
-        if (!File::exists($publicPath)) {
-            File::makeDirectory($publicPath, 0777, true, true);
+        if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
+            $uploadedFileUrl = Cloudinary::upload($photo->getRealPath(), [
+                'folder' => $folderPath,
+            ])->getSecurePath();
+
+            $publicId = Cloudinary::getPublicId($uploadedFileUrl);
+
+            return [
+                'photo_url' => $uploadedFileUrl,
+                'cloudinary_photo_public_id' => $publicId,
+            ];
+        } else {
+            $publicPath = public_path($folderPath);
+            if (!File::exists($publicPath)) {
+                File::makeDirectory($publicPath, 0777, true, true);
+            }
+
+            $fileName = time() . '_' . $photo->getClientOriginalName();
+            $photo->move($publicPath, $fileName);
+
+            return [
+                'photo_url' => '/' . $folderPath . '/' . $fileName,
+                'cloudinary_photo_public_id' => null,
+            ];
         }
-
-        $fileName = time() . '_' . $photo->getClientOriginalName();
-        $photo->move($publicPath, $fileName);
-
-        return '/' . $folderPath . '/' . $fileName;
     }
 
-    private function deletePhoto($photoUrl)
+    private function deleteCloudinaryPhoto($publicId)
+    {
+        Cloudinary::destroy($publicId);
+    }
+
+    private function deleteLocalPhoto($photoUrl)
     {
         $photoPath = parse_url($photoUrl, PHP_URL_PATH);
         $photoPath = public_path($photoPath);
@@ -126,4 +155,5 @@ class BrandAccessoryController extends Controller
             File::delete($photoPath);
         }
     }
+
 }

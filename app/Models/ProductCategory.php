@@ -13,6 +13,8 @@ class ProductCategory extends Model
         'name',
         'status',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'details',
         'created_by',
         'updated_by',

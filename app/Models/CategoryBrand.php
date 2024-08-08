@@ -13,6 +13,8 @@ class CategoryBrand extends Model
         'name',
         'status',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'details',
         'product_categories_id',
         'created_by',
