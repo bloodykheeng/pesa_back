@@ -29,7 +29,7 @@
         "CLOUDINARY_CLOUD_NAME": "dvq3sbctj",
         "CLOUDINARY_API_KEY": "332545941594675",
         "CLOUDINARY_API_SECRET": "yNI5BiJspyPIQ_SysaUxA4vfHKs",
-        "CLOUDINARY_SECURE_URL": true,
+        "CLOUDINARY_SECURE_URL": "true",
 
         "MEDIA_STORAGE_METHOD": "cloudinary",
 

@@ -51,3 +51,5 @@ yarn-error.log
 /public/blog_photos/*
 /public/category_photos/*
 
+
+.vercel
