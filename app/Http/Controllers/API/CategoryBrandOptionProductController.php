@@ -13,7 +13,7 @@ class CategoryBrandOptionProductController extends Controller
 {
     public function index()
     {
-        $products = CategoryBrandOptionProduct::get();
+        $products = CategoryBrandOptionProduct::with(['categoryBrandOption', 'createdBy', 'updatedBy'])->get();
         return response()->json(['data' => $products]);
     }
 
