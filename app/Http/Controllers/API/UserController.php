@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -268,4 +269,57 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
-    }}
+    }
+
+
+    public function update_profile_photo(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = User::find(Auth::id());
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $photoUrl = $user->photo_url;
+
+        if ($request->file('photo')) {
+            // Delete old photo if it exists
+            if ($photoUrl) {
+                $this->deletePhoto($photoUrl);
+            }
+            $photoUrl = $this->uploadPhoto($request->file('photo'), 'user_photos');
+
+            $user->photo_url = $photoUrl;
+            $user->save();
+
+            // Save the image file name to the user's photo column
+
+            return response()->json([
+                'message' => 'Image uploaded successfully',
+                'id' => $user->id,
+                'name' => $user->name,
+                'photo_url' => $user->photo_url,
+                'lastlogin' => $user->lastlogin,
+                'email' => $user->email,
+                'status' => $user->status,
+                // 'permissions' => $user->getAllPermissions()->pluck('name'),
+                // 'role' => $user->getRoleNames()->first() ?? "",
+            ]);
+        }
+
+        return response()->json(['message' => 'Failed to upload image']);
+    }
+
+    private function deletePhoto($photoUrl)
+    {
+        $photoPath = parse_url($photoUrl, PHP_URL_PATH);
+        $photoPath = public_path($photoPath);
+        if (File::exists($photoPath)) {
+            File::delete($photoPath);
+        }
+    }
+}

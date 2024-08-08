@@ -40,6 +40,19 @@ Route::post('forgot-password', [PasswordResetController::class, 'forgetPassword'
 Route::get('/reset-password', [PasswordResetController::class, 'handleresetPasswordLoad']);
 Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNewPassword']);
 
+//==================  product routes ============================
+Route::resource('product-categories', ProductCategoryController::class)->only(['index']);
+Route::resource('category-brands', CategoryBrandController::class)->only(['index']);
+Route::resource('brand-accessories', BrandAccessoryController::class)->only(['index']);
+Route::resource('category-brand-options', CategoryBrandOptionController::class)->only(['index']);
+Route::resource('category-brand-option-products', CategoryBrandOptionProductController::class)->only(['index']);
+
+ // =============  explore section routes =============
+ Route::resource('explore-categories', ExploreCategoryController::class)->only(['index']);
+ Route::resource('explore-category-blogs', ExploreCategoryBlogController::class)->only(['index']);
+
+
+
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
@@ -59,11 +72,15 @@ Route::group(
         Route::resource('explore-categories', ExploreCategoryController::class);
         Route::resource('explore-category-blogs', ExploreCategoryBlogController::class);
 
+
         //======================== User Management =================================
         Route::Resource('users', UserController::class);
 
         Route::get('get-logged-in-user', [AuthController::class, 'checkLoginStatus']);
 
+        Route::post('/profile-photo', [UserController::class, 'update_profile_photo']);
+        Route::post('/profile-update/{id}', [UserController::class, 'profile_update']);
+        
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
 
