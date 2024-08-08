@@ -60,12 +60,13 @@ class ProductCategoryController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            // 'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
         ]);
 
         if ($request->hasFile('photo')) {
+            // return response()->json(['message' => 'testing'], 404);
             // Delete existing photo
             if ($category->cloudinary_photo_public_id) {
                 $this->deleteCloudinaryPhoto($category->cloudinary_photo_public_id);
