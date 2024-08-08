@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('category_brands', function (Blueprint $table) {
             $table->id();
             $table->string('name')->index();
+            $table->string('code')->index();
             $table->string('status')->default('active')->index();
             $table->string('photo_url')->nullable();
             $table->string('cloudinary_photo_url')->nullable();

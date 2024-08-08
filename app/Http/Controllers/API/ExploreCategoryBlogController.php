@@ -46,6 +46,7 @@ class ExploreCategoryBlogController extends Controller
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
             'photo_url' => $photoData['photo_url'] ?? null,
+            'cloudinary_photo_url' => $photoData['cloudinary_photo_url'] ?? null,
             'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'explore_categories_id' => $validated['explore_categories_id'],
             'created_by' => Auth::id(),
@@ -78,8 +79,9 @@ class ExploreCategoryBlogController extends Controller
             }
 
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'blog_photos');
-            $validated['photo_url'] = $photoData['photo_url'];
-            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'];
+            $validated['photo_url'] = $photoData['photo_url'] ?? null;
+            $validated['cloudinary_photo_url'] = $photoData['cloudinary_photo_url'] ?? null;
+            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'] ?? null;
         }
 
         $validated['updated_by'] = Auth::id();

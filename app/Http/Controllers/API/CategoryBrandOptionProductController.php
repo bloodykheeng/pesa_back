@@ -47,6 +47,7 @@ class CategoryBrandOptionProductController extends Controller
             'name' => $validated['name'],
             'status' => $validated['status'] ?? 'active',
             'photo_url' => $photoData['photo_url'] ?? null,
+            'cloudinary_photo_url' => $photoData['cloudinary_photo_url'] ?? null,
             'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'price' => $validated['price'],
             'quantity' => $validated['quantity'],
@@ -84,8 +85,9 @@ class CategoryBrandOptionProductController extends Controller
             }
 
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'product_photos');
-            $validated['photo_url'] = $photoData['photo_url'];
-            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'];
+            $validated['photo_url'] = $photoData['photo_url'] ?? null;
+            $validated['cloudinary_photo_url'] = $photoData['cloudinary_photo_url'] ?? null;
+            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'] ?? null;
         }
 
         $validated['updated_by'] = Auth::id();

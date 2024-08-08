@@ -13,6 +13,7 @@ class CategoryBrandOption extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'status',
         'details',
         'category_brands_id',

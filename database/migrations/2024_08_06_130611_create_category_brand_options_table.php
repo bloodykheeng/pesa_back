@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('category_brand_options', function (Blueprint $table) {
             $table->id();
             $table->string('name')->index();
+            $table->string('code')->index();
             $table->string('status')->default('active')->index();
             $table->text('details')->nullable();
             $table->unsignedBigInteger('category_brands_id');

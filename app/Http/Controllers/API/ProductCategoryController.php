@@ -30,6 +30,7 @@ class ProductCategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'code' => 'required|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
@@ -39,6 +40,7 @@ class ProductCategoryController extends Controller
 
         $category = ProductCategory::create(array_merge([
             'name' => $validated['name'],
+            'code' => $validated['code'],
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
             'created_by' => Auth::id(),
@@ -57,6 +59,7 @@ class ProductCategoryController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
+            'code' => 'required|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',

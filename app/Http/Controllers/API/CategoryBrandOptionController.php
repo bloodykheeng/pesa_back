@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
-use App\Models\CategoryBrandOption;
 use App\Http\Controllers\Controller;
+use App\Models\CategoryBrandOption;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CategoryBrandOptionController extends Controller
@@ -28,6 +28,7 @@ class CategoryBrandOptionController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'code' => 'required|string|max:255',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
             'category_brands_id' => 'required|exists:category_brands,id',
@@ -35,6 +36,7 @@ class CategoryBrandOptionController extends Controller
 
         $option = CategoryBrandOption::create([
             'name' => $validated['name'],
+            'code' => $validated['code'],
             'status' => $validated['status'] ?? 'active',
             'details' => $validated['details'],
             'category_brands_id' => $validated['category_brands_id'],
@@ -54,6 +56,7 @@ class CategoryBrandOptionController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
+            'code' => 'sometimes|required|string|max:255',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
             'category_brands_id' => 'sometimes|required|exists:category_brands,id',
