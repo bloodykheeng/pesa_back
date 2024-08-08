@@ -113,47 +113,55 @@ class BrandAccessoryController extends Controller
         return response()->json(null, 204);
     }
 
-    private function handlePhotoUpload($photo, $folderPath)
-    {
-        if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
-            $uploadedFileUrl = Cloudinary::upload($photo->getRealPath(), [
-                'folder' => $folderPath,
-            ])->getSecurePath();
+  //=================== upload Photos Helper functions ==========================
 
-            $publicId = Cloudinary::getPublicId($uploadedFileUrl);
+  private function handlePhotoUpload($photo, $folderPath)
+  {
+      if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
+          return $this->uploadToCloudinary($photo, $folderPath);
+      } else {
+          return $this->uploadToLocal($photo, $folderPath);
+      }
+  }
 
-            return [
-                'photo_url' => $uploadedFileUrl,
-                'cloudinary_photo_public_id' => $publicId,
-            ];
-        } else {
-            $publicPath = public_path($folderPath);
-            if (!File::exists($publicPath)) {
-                File::makeDirectory($publicPath, 0777, true, true);
-            }
+  private function uploadToCloudinary($photo, $folderPath)
+  {
+      $uploadedFile = Cloudinary::upload($photo->getRealPath(), [
+          'folder' => $folderPath,
+      ]);
+      return [
+          'cloudinary_photo_url' => $uploadedFile->getSecurePath(),
+          'cloudinary_photo_public_id' => $uploadedFile->getPublicId(),
+      ];
+  }
 
-            $fileName = time() . '_' . $photo->getClientOriginalName();
-            $photo->move($publicPath, $fileName);
+  private function uploadToLocal($photo, $folderPath)
+  {
+      $publicPath = public_path($folderPath);
+      if (!File::exists($publicPath)) {
+          File::makeDirectory($publicPath, 0777, true, true);
+      }
 
-            return [
-                'photo_url' => '/' . $folderPath . '/' . $fileName,
-                'cloudinary_photo_public_id' => null,
-            ];
-        }
-    }
+      $fileName = time() . '_' . $photo->getClientOriginalName();
+      $photo->move($publicPath, $fileName);
 
-    private function deleteCloudinaryPhoto($publicId)
-    {
-        Cloudinary::destroy($publicId);
-    }
+      return [
+          'photo_url' => '/' . $folderPath . '/' . $fileName,
+      ];
+  }
 
-    private function deleteLocalPhoto($photoUrl)
-    {
-        $photoPath = parse_url($photoUrl, PHP_URL_PATH);
-        $photoPath = public_path($photoPath);
-        if (File::exists($photoPath)) {
-            File::delete($photoPath);
-        }
-    }
+  private function deleteCloudinaryPhoto($publicId)
+  {
+      Cloudinary::destroy($publicId);
+  }
+
+  private function deleteLocalPhoto($photoUrl)
+  {
+      $photoPath = parse_url($photoUrl, PHP_URL_PATH);
+      $photoPath = public_path($photoPath);
+      if (File::exists($photoPath)) {
+          File::delete($photoPath);
+      }
+  }
 
 }

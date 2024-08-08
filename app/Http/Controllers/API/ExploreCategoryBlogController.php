@@ -107,33 +107,41 @@ class ExploreCategoryBlogController extends Controller
         return response()->json(null, 204);
     }
 
+    //=================== upload Photos Helper functions ==========================
+
     private function handlePhotoUpload($photo, $folderPath)
     {
         if (env('MEDIA_STORAGE_METHOD') === 'cloudinary') {
-            $uploadedFileUrl = Cloudinary::upload($photo->getRealPath(), [
-                'folder' => $folderPath,
-            ])->getSecurePath();
-
-            $publicId = Cloudinary::getPublicId($uploadedFileUrl);
-
-            return [
-                'photo_url' => $uploadedFileUrl,
-                'cloudinary_photo_public_id' => $publicId,
-            ];
+            return $this->uploadToCloudinary($photo, $folderPath);
         } else {
-            $publicPath = public_path($folderPath);
-            if (!File::exists($publicPath)) {
-                File::makeDirectory($publicPath, 0777, true, true);
-            }
-
-            $fileName = time() . '_' . $photo->getClientOriginalName();
-            $photo->move($publicPath, $fileName);
-
-            return [
-                'photo_url' => '/' . $folderPath . '/' . $fileName,
-                'cloudinary_photo_public_id' => null,
-            ];
+            return $this->uploadToLocal($photo, $folderPath);
         }
+    }
+
+    private function uploadToCloudinary($photo, $folderPath)
+    {
+        $uploadedFile = Cloudinary::upload($photo->getRealPath(), [
+            'folder' => $folderPath,
+        ]);
+        return [
+            'cloudinary_photo_url' => $uploadedFile->getSecurePath(),
+            'cloudinary_photo_public_id' => $uploadedFile->getPublicId(),
+        ];
+    }
+
+    private function uploadToLocal($photo, $folderPath)
+    {
+        $publicPath = public_path($folderPath);
+        if (!File::exists($publicPath)) {
+            File::makeDirectory($publicPath, 0777, true, true);
+        }
+
+        $fileName = time() . '_' . $photo->getClientOriginalName();
+        $photo->move($publicPath, $fileName);
+
+        return [
+            'photo_url' => '/' . $folderPath . '/' . $fileName,
+        ];
     }
 
     private function deleteCloudinaryPhoto($publicId)
