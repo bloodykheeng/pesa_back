@@ -41,15 +41,15 @@ Route::get('/reset-password', [PasswordResetController::class, 'handleresetPassw
 Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNewPassword']);
 
 //==================  product routes ============================
-Route::resource('product-categories', ProductCategoryController::class)->only(['index']);
-Route::resource('category-brands', CategoryBrandController::class)->only(['index']);
-Route::resource('brand-accessories', BrandAccessoryController::class)->only(['index']);
-Route::resource('category-brand-options', CategoryBrandOptionController::class)->only(['index']);
-Route::resource('category-brand-option-products', CategoryBrandOptionProductController::class)->only(['index']);
+Route::resource('app-product-categories', ProductCategoryController::class)->only(['index']);
+Route::resource('app-category-brands', CategoryBrandController::class)->only(['index', 'show']);
+Route::resource('app-brand-accessories', BrandAccessoryController::class)->only(['index']);
+Route::resource('app-category-brand-options', CategoryBrandOptionController::class)->only(['index']);
+Route::resource('app-category-brand-option-products', CategoryBrandOptionProductController::class)->only(['index']);
 
  // =============  explore section routes =============
- Route::resource('explore-categories', ExploreCategoryController::class)->only(['index']);
- Route::resource('explore-category-blogs', ExploreCategoryBlogController::class)->only(['index']);
+ Route::resource('app-explore-categories', ExploreCategoryController::class)->only(['index']);
+ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::class)->only(['index']);
 
 
 

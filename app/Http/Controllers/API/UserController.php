@@ -286,4 +286,111 @@ class UserController extends Controller
         }
     }
 
+
+    public function update_profile_photo(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = User::find(Auth::id());
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $photoUrl = $user->photo_url;
+
+        if ($request->file('photo')) {
+            // Delete old photo if it exists
+            if ($photoUrl) {
+                $this->deletePhoto($photoUrl);
+            }
+            $photoUrl = $this->uploadPhoto($request->file('photo'), 'user_photos');
+
+            $user->photo_url = $photoUrl;
+            $user->save();
+
+            // Save the image file name to the user's photo column
+
+            return response()->json([
+                'message' => 'Image uploaded successfully',
+                'id' => $user->id,
+                'name' => $user->name,
+                'photo_url' => $user->photo_url,
+                'lastlogin' => $user->lastlogin,
+                'email' => $user->email,
+                'status' => $user->status,
+                // 'permissions' => $user->getAllPermissions()->pluck('name'),
+                // 'role' => $user->getRoleNames()->first() ?? "",
+            ]);
+        }
+
+        return response()->json(['message' => 'Failed to upload image']);
+    }
+
+    public function profile_update(Request $request, $id)
+    {
+
+        // Check permission
+        // if (!Auth::user()->can('update user')) {
+        //     return response()->json(['message' => 'Unauthorized'], 403);
+        // }
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'phone' => 'required|string|max:255|unique:users,phone,' . $id,
+
+        ]);
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $user->update([
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
+                'phone' => $validatedData['phone'],
+            ]);
+
+            DB::commit();
+            return response()->json(['message' => 'User updated successfully!', 'id' => $user->id,
+                'name' => $user->name,
+                'photo_url' => $user->photo_url,
+                'lastlogin' => $user->lastlogin,
+                'email' => $user->email,
+                'status' => $user->status], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+
+    private function uploadPhoto($photo, $folderPath)
+    {
+        $publicPath = public_path($folderPath);
+        if (!File::exists($publicPath)) {
+            File::makeDirectory($publicPath, 0777, true, true);
+        }
+
+        $fileName = time() . '_' . $photo->getClientOriginalName();
+        $photo->move($publicPath, $fileName);
+
+        return '/' . $folderPath . '/' . $fileName;
+    }
+
+    private function deletePhoto($photoUrl)
+    {
+        $photoPath = parse_url($photoUrl, PHP_URL_PATH);
+        $photoPath = public_path($photoPath);
+        if (File::exists($photoPath)) {
+            File::delete($photoPath);
+        }
+    }
+
 }
