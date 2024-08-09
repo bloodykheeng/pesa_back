@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('name')->index();
             $table->string('status')->default('active')->index();
             $table->string('photo_url')->nullable();
+            $table->string('cloudinary_photo_url')->nullable();
+            $table->string('cloudinary_photo_public_id')->nullable();
             $table->decimal('price', 8, 2);
             $table->integer('quantity');
             $table->text('details')->nullable();

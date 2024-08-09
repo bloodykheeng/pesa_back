@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('product_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique()->index();
+            $table->string('code')->index();
             $table->string('status')->default('active')->index();
             $table->string('photo_url')->nullable();
+            $table->string('cloudinary_photo_url')->nullable();
+            $table->string('cloudinary_photo_public_id')->nullable();
             $table->text('details')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

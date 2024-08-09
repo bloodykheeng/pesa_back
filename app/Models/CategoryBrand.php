@@ -11,8 +11,11 @@ class CategoryBrand extends Model
 
     protected $fillable = [
         'name',
+        'code',
         'status',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'details',
         'product_categories_id',
         'created_by',

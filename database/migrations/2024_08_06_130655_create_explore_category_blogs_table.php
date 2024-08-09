@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('status')->default('active')->index();
             $table->text('details')->nullable();
             $table->string('photo_url')->nullable();
+            $table->string('cloudinary_photo_url')->nullable();
+            $table->string('cloudinary_photo_public_id')->nullable();
             $table->unsignedBigInteger('explore_categories_id');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();

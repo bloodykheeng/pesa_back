@@ -25,6 +25,14 @@
         "DB_USERNAME": "postgres.eiyvvyesppbsymchiphs",
         "DB_PASSWORD": "taroieuvCyrN9RT1",
 
+        "CLOUDINARY_URL": "cloudinary://332545941594675:yNI5BiJspyPIQ_SysaUxA4vfHKs@dvq3sbctj",
+        "CLOUDINARY_CLOUD_NAME": "dvq3sbctj",
+        "CLOUDINARY_API_KEY": "332545941594675",
+        "CLOUDINARY_API_SECRET": "yNI5BiJspyPIQ_SysaUxA4vfHKs",
+        "CLOUDINARY_SECURE_URL": true,
+
+        "MEDIA_STORAGE_METHOD": "cloudinary",
+
         "APP_CONFIG_CACHE": "/tmp/config.php",
         "APP_EVENTS_CACHE": "/tmp/events.php",
         "APP_PACKAGES_CACHE": "/tmp/packages.php",

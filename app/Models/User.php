@@ -26,6 +26,8 @@ class User extends Authenticatable
         'status',
         'lastlogin',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'agree',
         'phone',
         'date_of_birth',

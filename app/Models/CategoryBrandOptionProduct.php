@@ -15,6 +15,8 @@ class CategoryBrandOptionProduct extends Model
         'name',
         'status',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'price',
         'quantity',
         'details',

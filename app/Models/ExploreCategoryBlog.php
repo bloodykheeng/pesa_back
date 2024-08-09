@@ -16,6 +16,8 @@ class ExploreCategoryBlog extends Model
         'status',
         'details',
         'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'explore_categories_id',
         'created_by',
         'updated_by',

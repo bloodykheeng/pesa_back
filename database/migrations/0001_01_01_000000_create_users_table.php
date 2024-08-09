@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('status')->nullable()->default("deactive")->index();
             $table->timestamp('lastlogin')->nullable()->useCurrent();
             $table->string('photo_url')->nullable();
+            $table->string('cloudinary_photo_url')->nullable();
+            $table->string('cloudinary_photo_public_id')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
