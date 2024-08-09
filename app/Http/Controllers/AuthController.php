@@ -28,8 +28,9 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
             'role' => 'required|exists:roles,name', // Validate that the role exists
             // 'vendor_id' => 'nullable|exists:vendors,id',
-            'phone' => 'required|string|regex:/^\+\d{12}$/', // Validate phone number with country code
-            'date_of_birth' => 'required|date',
+            // 'phone' => 'required|string|regex:/^\+\d{12}$/', // Validate phone number with country code
+            'phone' => 'required|string|max:255|unique:users',
+            'date_of_birth' => 'nullable|date',
             'agree' => 'required|boolean',
         ]);
 
