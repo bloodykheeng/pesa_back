@@ -13,6 +13,8 @@ use App\Http\Controllers\API\UserRolesController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\PackageController;
 
 //============== cors handler ================================
 // header('Access-Control-Allow-Origin: *');
@@ -71,6 +73,16 @@ Route::group(
         // =============  explore section routes =============
         Route::resource('explore-categories', ExploreCategoryController::class);
         Route::resource('explore-category-blogs', ExploreCategoryBlogController::class);
+
+        //messages for the chatroom
+        Route::resource('messages', MessageController::class);
+        Route::get('/messages/{sender}/{receiver}', [MessageController::class, 'chat']);
+        Route::get('/client/messages/{sender}', [MessageController::class, 'clientMsgs']);
+        Route::get('/business/messages/{sender}', [MessageController::class, 'businessMsgs']);
+        Route::put('/client/messages/{sender}/{receiver}', [MessageController::class, 'updateMessagetoRead']);
+
+        // ===================Packages routes=========================================
+        Route::resource('packages', PackageController::class);
 
 
         //======================== User Management =================================
