@@ -55,72 +55,7 @@ class MessageController extends Controller
         return response()->json($messages);
     }
 
-    public function clientMsgs(String $senderId)
-    {
-        // return response()->json([
-        //     'messages' => $senderId
-        // ]);
-        $messages = Message::where('senderId', $senderId)->with("sender", "pharmacy")->orderBy('created_at', 'desc')->get();
-        $unreadMessages = Message::where('senderId', $senderId)->where('senderType', 'Business')->where('is_read', false)->with("sender", "pharmacy")->orderBy('created_at', 'desc')->get();
-
-        $groupedMessages = $messages->groupBy('receiverId');
-
-        // Transform the collection into the desired structure
-        $orderedMessages = $groupedMessages->map(function ($messages, $receiverId) {
-            // Get the pharmacy details (assuming all messages have the same pharmacy)
-            $receiver = $messages->first()->receiver;
-            $unread = [];
-            if (array() === $messages->where('is_read', false)->where('senderType', 'Business')) {
-                $unread = $messages->where('is_read', false)->where('senderType', 'Business');
-            } else {
-                $unread = $messages->where('is_read', false)->where('senderType', 'Business')->values()->toArray();
-            }
-            // Return the pharmacy with its messages
-            return [
-                'pharmacy' => $receiver,
-
-                'messages' => $unread,
-
-                'last' => $messages->first()
-            ];
-        })->values();
-
-        return response()->json(['orderedMessages' => $orderedMessages, 'unreadMessages' => $unreadMessages]);
-    }
-
-    public function businessMsgs(String $receiverId)
-    {
-        // return response()->json([
-        //     'messages' => $senderId
-        // ]);
-        $messages = Message::where('receiverId', $receiverId)->with("sender", "pharmacy")->orderBy('created_at', 'desc')->get();
-        $unreadMessages = Message::where('receiverId', $receiverId)->where('senderType', 'Client')->where('is_read', false)->with("sender", "pharmacy")->orderBy('created_at', 'desc')->get();
-
-        $groupedMessages = $messages->groupBy('senderId');
-
-        // Transform the collection into the desired structure
-        $orderedMessages = $groupedMessages->map(function ($messages, $receiverId) {
-            // Get the pharmacy details (assuming all messages have the same pharmacy)
-            $sender = $messages->first()->sender;
-            $unread = [];
-            if (array() === $messages->where('is_read', false)->where('senderType', 'Client')) {
-                $unread = $messages->where('is_read', false)->where('senderType', 'Client');
-            } else {
-                $unread = $messages->where('is_read', false)->where('senderType', 'Client')->values()->toArray();
-            }
-            // Return the pharmacy with its messages
-            return [
-                'sender' => $sender,
-
-                'messages' => $unread,
-
-                'last' => $messages->first()
-            ];
-        })->values();
-
-        return response()->json(['orderedMessages' => $orderedMessages, 'unreadMessages' => $unreadMessages]);
-    }
-
+    
 
 
     /**
@@ -163,4 +98,52 @@ class MessageController extends Controller
         $message->delete();
         return response()->json(null, 204);
     }
+
+    public function sendMessage(Request $request)
+{
+    $message = new Message();
+    $message->content = $request->input('content');
+    $message->senderId = auth()->user()->id;
+    $message->receiverId = $request->input('receiverId'); // Admin's ID for customer, customer's ID for admin
+    $message->save();
+
+    return response()->json($message);
+}
+
+public function getMessages(Request $request)
+{
+    $userId = auth()->user()->id;
+    $withUserId = $request->query('with_user'); // Admin's ID for customer, customer's ID for admin
+
+    $messages = Message::where(function ($query) use ($userId, $withUserId) {
+        $query->where('senderId', $userId)
+              ->where('receiverId', $withUserId);
+    })->orWhere(function ($query) use ($userId, $withUserId) {
+        $query->where('senderId', $withUserId)
+              ->where('receiverId', $userId);
+    })->orderBy('created_at', 'asc') // Order by timestamp for chat sequence
+    ->get();
+
+    return response()->json($messages);
+}
+
+public function markAsRead($id)
+{
+    $message = Message::findOrFail($id);
+    $message->is_read = true;
+    $message->save();
+
+    return response()->json($message);
+}
+
+public function deleteMessage($id)
+{
+    $message = Message::findOrFail($id);
+    $message->delete();
+
+    return response()->json(['success' => true]);
+}
+
+
+
 }
