@@ -82,6 +82,7 @@ Route::group(
 
         // ===================Packages routes=========================================
         Route::resource('packages', PackageController::class);
+        Route::get('my-packages', [PackageController::class, 'myPackages']);
 
 
         //======================== User Management =================================
