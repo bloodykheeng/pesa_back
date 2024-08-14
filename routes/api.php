@@ -75,14 +75,14 @@ Route::group(
         Route::resource('explore-category-blogs', ExploreCategoryBlogController::class);
 
         //messages for the chatroom
-        Route::resource('messages', MessageController::class);
-        Route::get('/messages/{sender}/{receiver}', [MessageController::class, 'chat']);
-        Route::get('/client/messages/{sender}', [MessageController::class, 'clientMsgs']);
-        Route::get('/business/messages/{sender}', [MessageController::class, 'businessMsgs']);
-        Route::put('/client/messages/{sender}/{receiver}', [MessageController::class, 'updateMessagetoRead']);
+        Route::post('/messages', [MessageController::class, 'sendMessage']);
+        Route::get('/messages', [MessageController::class, 'getMessages']);
+        Route::patch('/messages/{id}/read', [MessageController::class, 'markAsRead']);
+        Route::delete('/messages/{id}', [MessageController::class, 'deleteMessage']);
 
         // ===================Packages routes=========================================
         Route::resource('packages', PackageController::class);
+        Route::get('my-packages', [PackageController::class, 'myPackages']);
 
 
         //======================== User Management =================================

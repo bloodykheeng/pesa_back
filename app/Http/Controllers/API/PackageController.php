@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Package;
+use App\Models\User;
 use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
@@ -16,8 +17,22 @@ class PackageController extends Controller
      */
     public function index()
     {
-        $categories = Package::with('createdBy')->get();
-        return response()->json(['data' => $categories]);
+        $packages = Package::with('createdBy')->get();
+        return response()->json(['data' => $packages]);
+    }
+
+    public function myPackages()
+    {
+        $user = User::find(Auth::user()->id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $packages = Package::with(['createdBy'])->where('created_by', $user->id)->get();
+        if (!$packages) {
+            return response()->json(['message' => 'Packages not found'], 404);
+        }
+        return response()->json(['data' => $packages]);
     }
 
     public function show($id)
@@ -68,7 +83,7 @@ class PackageController extends Controller
             'destination' => 'required|string|max:255',
             // 'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
-            'extraInfo' => 'nullable|string',
+            'extraInfo' => 'required|string',
         ]);
 
         if ($request->hasFile('photo')) {
