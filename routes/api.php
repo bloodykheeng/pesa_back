@@ -93,7 +93,7 @@ Route::group(
  
          //=============== spare parts transactions ========================
          Route::apiResource('orders', OrderController::class);
-         Route::get('my-orders', [OrderController::class, 'get_spare_part_transactions']);
+         Route::get('my-orders', [OrderController::class, 'get_orders']);
 
          
         //Roles AND Permisions
