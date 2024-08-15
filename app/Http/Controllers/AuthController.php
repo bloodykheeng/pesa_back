@@ -30,7 +30,7 @@ class AuthController extends Controller
             // 'vendor_id' => 'nullable|exists:vendors,id',
             // 'phone' => 'required|string|regex:/^\+\d{12}$/', // Validate phone number with country code
             'phone' => 'required|string|max:255|unique:users',
-            'date_of_birth' => 'nullable|date',
+            // 'date_of_birth' => 'nullable|date',
             'agree' => 'required|boolean',
         ]);
 
