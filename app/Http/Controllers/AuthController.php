@@ -116,11 +116,13 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid Email Or Password'], 401);
+        $loginField = filter_var($request->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        if (!Auth::attempt([$loginField => $request->input('login'), 'password' => $request->input('password')])) {
+            return response()->json(['message' => 'Invalid Email/Phone Number Or Password'], 401);
         }
 
-        $user = User::where('email', $request['email'])->firstOrFail();
+        $user = User::where($loginField, $request->input('login'))->firstOrFail();
 
         // Check if the user's status is active
         if ($user->status !== 'active') {
@@ -157,6 +159,7 @@ class AuthController extends Controller
 
         return response()->json($response);
     }
+
 
     public function thirdPartyLoginAuthentication(Request $request)
     {

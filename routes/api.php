@@ -4,6 +4,7 @@ use App\Http\Controllers\API\CategoryBrandController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\ProductController;
@@ -44,7 +45,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNe
 //==================  product routes ============================
 Route::resource('app-product-categories', ProductCategoryController::class)->only(['index']);
 Route::resource('app-category-brands', CategoryBrandController::class)->only(['index', 'show']);
-Route::resource('product-types', ProductTypeController::class)->only(['index']);
+Route::resource('app-product-types', ProductTypeController::class)->only(['index']);
 Route::resource('app-products', ProductController::class)->only(['index']);
 
 // =============  explore section routes =============
@@ -87,6 +88,14 @@ Route::group(
         Route::post('/profile-photo', [UserController::class, 'update_profile_photo']);
         Route::post('/profile-update/{id}', [UserController::class, 'profile_update']);
 
+         //=============== spare parts transactions ========================
+         Route::apiResource('orders', OrderController::class)->except(['store']);
+ 
+         //=============== spare parts transactions ========================
+         Route::apiResource('orders', OrderController::class);
+         Route::get('my-orders', [OrderController::class, 'get_spare_part_transactions']);
+
+         
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
 
