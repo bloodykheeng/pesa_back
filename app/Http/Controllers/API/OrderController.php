@@ -43,12 +43,9 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'status' => 'nullable|string',
             'amount' => 'nullable|numeric',
             'charged_amount' => 'nullable|numeric',
-            'payment_status' => 'nullable|string',
             'payment_mode' => 'nullable|string',
-            'delivery_status' => 'nullable|string',
             'products' => 'nullable|array',
             'products.*.name' => 'required|string',
             'products.*.price' => 'required|numeric',
@@ -67,11 +64,11 @@ class OrderController extends Controller
 
             // Create the Order
             $order = Order::create([
-                'status' => $validated['status'],
+                'status' => 'active',
                 'amount' => $validated['amount'],
                 'charged_amount' => $validated['charged_amount'],
-                'payment_status' => $validated['payment_status'],
-                'delivery_status' => $validated['delivery_status'],
+                'payment_status' => 'Pending',
+                'delivery_status' => 'Processing',
                 'payment_mode' => $validated['payment_mode'],
                 'order_number' => $orderNumber,
                 'created_by' => Auth::id(),
@@ -82,7 +79,7 @@ class OrderController extends Controller
                 foreach ($validated['products'] as $productData) {
                     // Create each OrderProductProduct record
                     OrderProduct::create([
-                        'product_id' => $productData['spare_parts_id'],
+                        'product_id' => $productData['product_id'],
                         'order_id' => $order->id,
                         'quantity' => $productData['quantity'],
                         'name' => $productData['name'],
