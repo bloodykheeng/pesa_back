@@ -5,11 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CategoryBrandOptionProduct extends Model
+class Product extends Model
 {
     use HasFactory;
-
-    protected $table = 'category_brand_option_products';
 
     protected $fillable = [
         'name',
@@ -20,7 +18,8 @@ class CategoryBrandOptionProduct extends Model
         'price',
         'quantity',
         'details',
-        'category_brand_options_id',
+        'category_brands_id',
+        'product_types_id',
         'created_by',
         'updated_by',
     ];
@@ -29,14 +28,14 @@ class CategoryBrandOptionProduct extends Model
         'status' => 'active',
     ];
 
-    protected $casts = [
-        'price' => 'decimal:2',
-        'quantity' => 'integer',
-    ];
-
-    public function categoryBrandOption()
+    public function categoryBrand()
     {
-        return $this->belongsTo(CategoryBrandOption::class, 'category_brand_options_id');
+        return $this->belongsTo(CategoryBrand::class, 'category_brands_id');
+    }
+
+    public function productType()
+    {
+        return $this->belongsTo(ProductType::class, 'product_types_id');
     }
 
     public function createdBy()

@@ -3,18 +3,18 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\CategoryBrand;
+use App\Models\ProductType;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 
-class CategoryBrandController extends Controller
+class ProductTypeController extends Controller
 {
     public function index(Request $request)
     {
         // Build the query with eager loading
-        $query = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy']);
+        $query = ProductType::with(['products', 'createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');
@@ -22,7 +22,6 @@ class CategoryBrandController extends Controller
         $status = $request->query('status');
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
-        $productCategoryId = $request->query('product_categories_id'); // New filter
 
         // Apply filters if the parameters are provided
         if (isset($code)) {
@@ -45,24 +44,20 @@ class CategoryBrandController extends Controller
             $query->where('updated_by', $updatedBy);
         }
 
-        if (isset($productCategoryId)) {
-            $query->where('product_categories_id', $productCategoryId);
-        }
-
         // Execute the query and get the results
-        $brands = $query->get();
+        $categories = $query->get();
 
         // Return the results as a JSON response
-        return response()->json(['data' => $brands]);
+        return response()->json(['data' => $categories]);
     }
 
     public function show($id)
     {
-        $brand = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy'])->find($id);
-        if (!$brand) {
-            return response()->json(['message' => 'Category Brand not found'], 404);
+        $type = ProductType::with(['products', 'createdBy', 'updatedBy'])->find($id);
+        if (!$type) {
+            return response()->json(['message' => 'Product type not found'], 404);
         }
-        return response()->json($brand);
+        return response()->json($type);
     }
 
     public function store(Request $request)
@@ -73,80 +68,74 @@ class CategoryBrandController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
-            'product_categories_id' => 'required|exists:product_categories,id',
         ]);
 
-        $photoData = null;
-        if ($request->hasFile('photo')) {
-            $photoData = $this->handlePhotoUpload($request->file('photo'), 'brand_photos');
+        $photoData=[];
+        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'type_photos');
         }
 
-        $brand = CategoryBrand::create([
+        $type = ProductType::create(array_merge([
             'name' => $validated['name'],
             'code' => $validated['code'],
-            'photo_url' => $photoData['photo_url'] ?? null,
-            'cloudinary_photo_url' => $photoData['cloudinary_photo_url'] ?? null,
-            'cloudinary_photo_public_id' => $photoData['cloudinary_photo_public_id'] ?? null,
             'status' => $validated['status'] ?? 'active',
-            'details' => $validated['details'] ?? null,
-            'product_categories_id' => $validated['product_categories_id'],
+            'details' => $validated['details'],
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
-        ]);
+        ], $photoData));
 
-        return response()->json(['message' => 'Category Brand created successfully', 'data' => $brand], 201);
+        return response()->json(['message' => 'Product type created successfully', 'data' => $type], 201);
     }
 
     public function update(Request $request, $id)
     {
-        $brand = CategoryBrand::find($id);
-        if (!$brand) {
-            return response()->json(['message' => 'Category Brand not found'], 404);
+        $type = ProductType::find($id);
+        if (!$type) {
+            return response()->json(['message' => 'Product type not found'], 404);
         }
 
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            // 'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
-            'product_categories_id' => 'sometimes|required|exists:product_categories,id',
         ]);
 
         if ($request->hasFile('photo')) {
-            if ($brand->cloudinary_photo_public_id) {
-                $this->deleteCloudinaryPhoto($brand->cloudinary_photo_public_id);
-            } elseif ($brand->photo_url) {
-                $this->deleteLocalPhoto($brand->photo_url);
+            // return response()->json(['message' => 'testing'], 404);
+            // Delete existing photo
+            if ($type->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($type->cloudinary_photo_public_id);
+            } elseif ($type->photo_url) {
+                $this->deleteLocalPhoto($type->photo_url);
             }
 
-            $photoData = $this->handlePhotoUpload($request->file('photo'), 'brand_photos');
-            $validated['photo_url'] = $photoData['photo_url'] ?? null;
-            $validated['cloudinary_photo_url'] = $photoData['cloudinary_photo_url'] ?? null;
-            $validated['cloudinary_photo_public_id'] = $photoData['cloudinary_photo_public_id'] ?? null;
+            // Upload new photo
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'type_photos');
+            $validated = array_merge($validated, $photoData);
         }
 
         $validated['updated_by'] = Auth::id();
+        $type->update($validated);
 
-        $brand->update($validated);
-
-        return response()->json(['message' => 'Category Brand updated successfully', 'data' => $brand]);
+        return response()->json(['message' => 'Product type updated successfully', 'data' => $type]);
     }
 
     public function destroy($id)
     {
-        $brand = CategoryBrand::find($id);
-        if (!$brand) {
-            return response()->json(['message' => 'Category Brand not found'], 404);
+        $type = ProductType::find($id);
+        if (!$type) {
+            return response()->json(['message' => 'Product type not found'], 404);
         }
 
-        if ($brand->cloudinary_photo_public_id) {
-            $this->deleteCloudinaryPhoto($brand->cloudinary_photo_public_id);
-        } elseif ($brand->photo_url) {
-            $this->deleteLocalPhoto($brand->photo_url);
+        if ($type->cloudinary_photo_public_id) {
+            $this->deleteCloudinaryPhoto($type->cloudinary_photo_public_id);
+        } elseif ($type->photo_url) {
+            $this->deleteLocalPhoto($type->photo_url);
         }
 
-        $brand->delete();
+        $type->delete();
 
         return response()->json(null, 204);
     }
@@ -201,5 +190,4 @@ class CategoryBrandController extends Controller
             File::delete($photoPath);
         }
     }
-
 }

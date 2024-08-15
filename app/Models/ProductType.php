@@ -5,18 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CategoryBrandOption extends Model
+class ProductType extends Model
 {
     use HasFactory;
-
-    protected $table = 'category_brand_options';
 
     protected $fillable = [
         'name',
         'code',
         'status',
+        'photo_url',
+        'cloudinary_photo_url',
+        'cloudinary_photo_public_id',
         'details',
-        'category_brands_id',
         'created_by',
         'updated_by',
     ];
@@ -27,11 +27,7 @@ class CategoryBrandOption extends Model
 
     public function products()
     {
-        return $this->hasMany(CategoryBrandOptionProduct::class, 'category_brand_options_id', 'id');
-    }
-    public function categoryBrand()
-    {
-        return $this->belongsTo(CategoryBrand::class, 'category_brands_id');
+        return $this->hasMany(Product::class, 'product_types_id', 'id');
     }
 
     public function createdBy()
