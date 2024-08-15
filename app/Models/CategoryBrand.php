@@ -26,16 +26,6 @@ class CategoryBrand extends Model
         'status' => 'active',
     ];
 
-    public function accessories()
-    {
-        return $this->hasMany(BrandAccessory::class, 'category_brands_id', 'id');
-    }
-
-    public function options()
-    {
-        return $this->hasMany(CategoryBrandOption::class, 'category_brands_id', 'id');
-    }
-
     public function productCategory()
     {
         return $this->belongsTo(ProductCategory::class, 'product_categories_id');
@@ -50,4 +40,10 @@ class CategoryBrand extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_brands_id', 'id');
+    }
+
 }

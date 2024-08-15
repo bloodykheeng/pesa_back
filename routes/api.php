@@ -1,20 +1,19 @@
 <?php
 
-use App\Http\Controllers\API\BrandAccessoryController;
 use App\Http\Controllers\API\CategoryBrandController;
-use App\Http\Controllers\API\CategoryBrandOptionController;
-use App\Http\Controllers\API\CategoryBrandOptionProductController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
+use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\ProductCategoryController;
+use App\Http\Controllers\API\ProductController;
+use App\Http\Controllers\API\ProductTypeController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\MessageController;
-use App\Http\Controllers\API\PackageController;
 
 //============== cors handler ================================
 // header('Access-Control-Allow-Origin: *');
@@ -45,15 +44,12 @@ Route::post('/reset-password', [PasswordResetController::class, 'handlestoringNe
 //==================  product routes ============================
 Route::resource('app-product-categories', ProductCategoryController::class)->only(['index']);
 Route::resource('app-category-brands', CategoryBrandController::class)->only(['index', 'show']);
-Route::resource('app-brand-accessories', BrandAccessoryController::class)->only(['index']);
-Route::resource('app-category-brand-options', CategoryBrandOptionController::class)->only(['index']);
-Route::resource('app-category-brand-option-products', CategoryBrandOptionProductController::class)->only(['index']);
+Route::resource('product-types', ProductTypeController::class)->only(['index']);
+Route::resource('app-products', ProductController::class)->only(['index']);
 
- // =============  explore section routes =============
- Route::resource('app-explore-categories', ExploreCategoryController::class)->only(['index']);
- Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::class)->only(['index']);
-
-
+// =============  explore section routes =============
+Route::resource('app-explore-categories', ExploreCategoryController::class)->only(['index']);
+Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::class)->only(['index']);
 
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
@@ -66,9 +62,8 @@ Route::group(
         //==================  product routes ============================
         Route::resource('product-categories', ProductCategoryController::class);
         Route::resource('category-brands', CategoryBrandController::class);
-        Route::resource('brand-accessories', BrandAccessoryController::class);
-        Route::resource('category-brand-options', CategoryBrandOptionController::class);
-        Route::resource('category-brand-option-products', CategoryBrandOptionProductController::class);
+        Route::resource('product-types', ProductTypeController::class);
+        Route::resource('products', ProductController::class);
 
         // =============  explore section routes =============
         Route::resource('explore-categories', ExploreCategoryController::class);
@@ -84,7 +79,6 @@ Route::group(
         Route::resource('packages', PackageController::class);
         Route::get('my-packages', [PackageController::class, 'myPackages']);
 
-
         //======================== User Management =================================
         Route::Resource('users', UserController::class);
 
@@ -92,7 +86,7 @@ Route::group(
 
         Route::post('/profile-photo', [UserController::class, 'update_profile_photo']);
         Route::post('/profile-update/{id}', [UserController::class, 'profile_update']);
-        
+
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
 
