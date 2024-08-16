@@ -58,12 +58,12 @@ class OrderController extends Controller
             // Start a database transaction
             DB::beginTransaction();
 
-            // do {
-            //     $orderNumber = strtoupper(Str::random(10));
-            // } while (Order::where('order_number', $orderNumber)->exists());
+            do {
+                $orderNumber = strtoupper(Str::random(10));
+            } while (Order::where('order_number', $orderNumber)->exists());
             
-            $orderNumber = strtoupper(Str::uuid()->toString());
-            
+            // $orderNumber = strtoupper(Str::uuid()->toString());
+
             // Create the Order
             $order = Order::create([
                 'status' => 'active',
