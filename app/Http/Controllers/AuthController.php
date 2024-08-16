@@ -118,6 +118,8 @@ class AuthController extends Controller
     {
         $loginField = filter_var($request->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
+        // return response()->json(['message' => 'testing', ' $loginField' => $loginField], 401);
+
         if (!Auth::attempt([$loginField => $request->input('login'), 'password' => $request->input('password')])) {
             return response()->json(['message' => 'Invalid Email/Phone Number Or Password'], 401);
         }
@@ -148,18 +150,17 @@ class AuthController extends Controller
             'agree' => $user->agree,
         ];
 
-        // Include vendor details if the user is a Vendor
-        if ($user->hasRole('Vendor')) {
-            $vendor = $user->vendors()->first(); // Assuming there's a vendors() relationship
-            $response['vendor'] = [
-                'id' => $vendor->vendor_id ?? null,
-                'name' => $vendor->vendor->name ?? 'Unknown Vendor',
-            ];
-        }
+        // // Include vendor details if the user is a Vendor
+        // if ($user->hasRole('Vendor')) {
+        //     $vendor = $user->vendors()->first(); // Assuming there's a vendors() relationship
+        //     $response['vendor'] = [
+        //         'id' => $vendor->vendor_id ?? null,
+        //         'name' => $vendor->vendor->name ?? 'Unknown Vendor',
+        //     ];
+        // }
 
         return response()->json($response);
     }
-
 
     public function thirdPartyLoginAuthentication(Request $request)
     {
