@@ -29,7 +29,11 @@ class PackageController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $packages = Package::with(['createdBy'])->where('created_by', $user->id)->get();
+        $packages = Package::with(['createdBy'])
+            ->where('created_by', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         if (!$packages) {
             return response()->json(['message' => 'Packages not found'], 404);
         }
