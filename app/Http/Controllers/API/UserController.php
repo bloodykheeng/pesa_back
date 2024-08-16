@@ -388,6 +388,45 @@ class UserController extends Controller
     }
 
 
+    public function resetPassword(Request $request, $id)
+    {
+        // Validate the incoming request data
+        $data = $request->validate([
+            'password' => [
+                'required',
+                'string',
+                'min:6', // Minimum length of 6 characters
+                'confirmed',
+                // 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
+            'password_confirmation' => [
+                'required',
+                'string',
+                'min:6', // Minimum length of 6 characters
+                // 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/',
+            ],
+        ]);
+
+        try {
+            // Find the user based on the provided email
+            $user = User::find($id);
+
+            // Update the user's password with the new password provided in the request
+            $user->update(['password' => bcrypt($data['password'])]);
+
+            // Return a success response
+            return response(['message' => 'Password has been successfully updated'], 200);
+        } catch (\Exception $e) {
+            // Log the exception
+            // \Log::error($e);
+
+            // Return a generic error response
+            return response(['message' => 'An error occurred'], 500);
+        }
+    }
+
+
+
     private function uploadPhoto($photo, $folderPath)
     {
         $publicPath = public_path($folderPath);

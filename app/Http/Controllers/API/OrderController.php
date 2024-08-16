@@ -210,6 +210,27 @@ class OrderController extends Controller
         return response()->json(null, 204);
     }
 
+    public function confirmReceipt(Request $request, $id)
+{
+    // Find the order by ID
+    $order = Order::find($id);
+
+    // Check if the order exists
+    if (!$order) {
+        return response()->json(['message' => 'Order not found'], 404);
+    }
+
+    // Update the delivery status to 'received'
+    $order->delivery_status = 'received';
+
+    // Save the changes
+    $order->save();
+
+    // Return a success response
+    return response()->json(['message' => 'Order status updated to received'], 200);
+}
+
+
     public function get_orders(Request $request)
     {
         $orders = Order::with('user', 'products.product')->where('created_by', Auth::user()->id)->orderBy('created_at', 'desc')->get();

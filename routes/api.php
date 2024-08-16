@@ -88,12 +88,15 @@ Route::group(
         Route::post('/profile-photo', [UserController::class, 'update_profile_photo']);
         Route::post('/profile-update/{id}', [UserController::class, 'profile_update']);
 
+        Route::post('/change-password/{id}', [UserController::class, 'resetPassword']);
+
          //=============== spare parts transactions ========================
          Route::apiResource('orders', OrderController::class)->except(['store']);
  
          //=============== spare parts transactions ========================
          Route::apiResource('orders', OrderController::class);
          Route::get('my-orders', [OrderController::class, 'get_orders']);
+         Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
 
          
         //Roles AND Permisions
