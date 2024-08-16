@@ -5,8 +5,8 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\User;
-use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -18,7 +18,7 @@ class PackageController extends Controller
      */
     public function index()
     {
-        $packages = Package::with('createdBy')->get();
+        $packages = Package::with(['updatedBy', 'createdBy'])->get();
         return response()->json(['data' => $packages]);
     }
 
@@ -38,7 +38,7 @@ class PackageController extends Controller
 
     public function show($id)
     {
-        $package = Package::with(['createdBy'])->find($id);
+        $package = Package::with(['createdBy', 'updatedBy'])->find($id);
         if (!$package) {
             return response()->json(['message' => 'Package not found'], 404);
         }
@@ -61,7 +61,7 @@ class PackageController extends Controller
         do {
             $orderNumber = strtoupper(Str::random(10));
         } while (Package::where('order_number', $orderNumber)->exists());
-        
+
         // $orderNumber = strtoupper(Str::uuid()->toString());
 
         $package = Package::create(array_merge([
@@ -109,6 +109,9 @@ class PackageController extends Controller
         }
 
         $validated['updated_by'] = Auth::id();
+
+        // return response()->json(['message' => 'testing', ' $validated' => $validated], 404);
+
         $package->update($validated);
 
         return response()->json(['message' => 'Package updated successfully', 'data' => $package]);

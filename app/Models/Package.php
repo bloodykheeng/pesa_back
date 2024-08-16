@@ -18,6 +18,7 @@ class Package extends Model
         'cloudinary_photo_url',
         'cloudinary_photo_public_id',
         'extraInfo',
+        'status',
         'created_by',
         'updated_by',
     ];

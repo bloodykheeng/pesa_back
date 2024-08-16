@@ -18,7 +18,7 @@ class OrderController extends Controller
         $query = Order::query();
 
         // Eager load relationships
-        $query->with('user', 'products');
+        $query->with('user', 'products.product');
 
         // Apply filters if present
         if ($request->has('user_id')) {
@@ -33,7 +33,7 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with('user', 'products')->find($id);
+        $order = Order::with('user', 'products.product')->find($id);
         if (!$order) {
             return response()->json(['message' => 'Transaction not found'], 404);
         }
@@ -61,7 +61,7 @@ class OrderController extends Controller
             do {
                 $orderNumber = strtoupper(Str::random(10));
             } while (Order::where('order_number', $orderNumber)->exists());
-            
+
             // $orderNumber = strtoupper(Str::uuid()->toString());
 
             // Create the Order
@@ -149,36 +149,6 @@ class OrderController extends Controller
                 'delivery_status' => $validated['delivery_status'] ?? $order->delivery_status,
                 'payment_status' => $validated['payment_status'] ?? $order->payment_status,
             ]);
-
-            // Remove old quantities
-            foreach ($order->products as $product) {
-                $product = Product::find($product->spare_parts_id);
-                if ($product) {
-                    $product->decrement('quantity', $product->quantity);
-                }
-            }
-            // Delete existing products and create new ones
-            $order->products()->delete();
-
-            if (isset($validated['products'])) {
-                foreach ($validated['products'] as $productData) {
-                    OrderProduct::create([
-                        'product_id' => $productData['product_id'],
-                        'order_id' => $order->id,
-                        'quantity' => $productData['quantity'],
-                        'name' => $productData['name'],
-                        'price' => $productData['price'],
-                        'created_by' => Auth::id(),
-                        'updated_by' => Auth::id(),
-                    ]);
-
-                    // Update spare part quantity
-                    $product = Product::find($productData['product_id']);
-                    if ($product) {
-                        $product->increment('quantity', $productData['quantity']);
-                    }
-                }
-            }
 
             // Commit the transaction if all operations succeed
             DB::commit();
