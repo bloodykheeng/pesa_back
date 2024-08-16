@@ -58,11 +58,11 @@ class PackageController extends Controller
 
         $photoData = $this->handlePhotoUpload($request->file('photo'), 'package_photos');
 
-        // do {
-        //     $orderNumber = strtoupper(Str::random(10));
-        // } while (Package::where('order_number', $orderNumber)->exists());
+        do {
+            $orderNumber = strtoupper(Str::random(10));
+        } while (Package::where('order_number', $orderNumber)->exists());
         
-        $orderNumber = strtoupper(Str::uuid()->toString());
+        // $orderNumber = strtoupper(Str::uuid()->toString());
 
         $package = Package::create(array_merge([
             'name' => $validated['name'],
