@@ -55,7 +55,8 @@ class PackageController extends Controller
             'name' => 'required|string|max:255',
             'pickup' => 'required|string|max:255',
             'destination' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            // 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
             'status' => 'nullable|string|max:255',
             'extraInfo' => 'nullable|string',
         ]);
@@ -72,7 +73,7 @@ class PackageController extends Controller
             'name' => $validated['name'],
             'pickup' => $validated['pickup'],
             'destination' => $validated['destination'],
-            'status' => $validated['status'] ?? 'active',
+            'status' => $validated['status'] ?? 'pending',
             'extraInfo' => $validated['extraInfo'],
             'order_number' => $orderNumber,
             'created_by' => Auth::id(),
