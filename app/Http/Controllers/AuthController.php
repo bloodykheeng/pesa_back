@@ -116,13 +116,13 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $loginField = filter_var($request->input('login'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+        $loginField = filter_var($request->input('credential'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
-        if (!Auth::attempt([$loginField => $request->input('login'), 'password' => $request->input('password')])) {
+        if (!Auth::attempt([$loginField => $request->input('credential'), 'password' => $request->input('password')])) {
             return response()->json(['message' => 'Invalid Email/Phone Number Or Password'], 401);
         }
 
-        $user = User::where($loginField, $request->input('login'))->firstOrFail();
+        $user = User::where($loginField, $request->input('credential'))->firstOrFail();
 
         // Check if the user's status is active
         if ($user->status !== 'active') {
@@ -141,6 +141,7 @@ class AuthController extends Controller
             'lastlogin' => $user->lastlogin,
             'email' => $user->email,
             'status' => $user->status,
+            'cloudinary_photo_url' => $user->cloudinary_photo_url,
             'permissions' => $user->getAllPermissions()->pluck('name'),
             'role' => $user->getRoleNames()->first() ?? "",
             'phone' => $user->phone,

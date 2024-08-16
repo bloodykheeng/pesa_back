@@ -289,7 +289,7 @@ class UserController extends Controller
 
     public function update_profile_photo(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -299,17 +299,22 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        $photoUrl = $user->photo_url;
-
-        if ($request->file('photo')) {
-            // Delete old photo if it exists
-            if ($photoUrl) {
-                $this->deletePhoto($photoUrl);
-            }
-            $photoUrl = $this->uploadPhoto($request->file('photo'), 'user_photos');
-
-            $user->photo_url = $photoUrl;
-            $user->save();
+            if ($request->hasFile('photo')) {
+                // return response()->json(['message' => 'testing'], 404);
+                // Delete existing photo
+                if ($user->cloudinary_photo_public_id) {
+                    $this->deleteCloudinaryPhoto($user->cloudinary_photo_public_id);
+                } elseif ($user->photo_url) {
+                    $this->deleteLocalPhoto($user->photo_url);
+                }
+    
+                // Upload new photo
+                $photoData = $this->handlePhotoUpload($request->file('photo'), 'user_photos');
+                $validated = array_merge($validated, $photoData);
+            
+    
+            $validated['updated_by'] = Auth::id();
+            $user->update($validated);
 
             // Save the image file name to the user's photo column
 
@@ -317,10 +322,12 @@ class UserController extends Controller
                 'message' => 'Image uploaded successfully',
                 'id' => $user->id,
                 'name' => $user->name,
+                'phone' => $user->phone,
                 'photo_url' => $user->photo_url,
                 'lastlogin' => $user->lastlogin,
                 'email' => $user->email,
                 'status' => $user->status,
+                'cloudinary_photo_url' => $user->cloudinary_photo_url,
                 // 'permissions' => $user->getAllPermissions()->pluck('name'),
                 // 'role' => $user->getRoleNames()->first() ?? "",
             ]);
@@ -358,12 +365,22 @@ class UserController extends Controller
             ]);
 
             DB::commit();
-            return response()->json(['message' => 'User updated successfully!', 'id' => $user->id,
-                'name' => $user->name,
-                'photo_url' => $user->photo_url,
-                'lastlogin' => $user->lastlogin,
-                'email' => $user->email,
-                'status' => $user->status], 200);
+            return response()->json([
+                'message' => 'User updated successfully!', 
+            'id' => $user->id,
+            'token_type' => 'Bearer',
+            'name' => $user->name,
+            'photo_url' => $user->photo_url,
+            'lastlogin' => $user->lastlogin,
+            'email' => $user->email,
+            'status' => $user->status,
+            'cloudinary_photo_url' => $user->cloudinary_photo_url,
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'role' => $user->getRoleNames()->first() ?? "",
+            'phone' => $user->phone,
+            'date_of_birth' => $user->date_of_birth,
+            'agree' => $user->agree,
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
