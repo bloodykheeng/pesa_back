@@ -14,6 +14,7 @@ class Package extends Model
         'pickup',
         'destination',
         'photo_url',
+        'order_number',
         'cloudinary_photo_url',
         'cloudinary_photo_public_id',
         'extraInfo',

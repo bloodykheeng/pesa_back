@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class PackageController extends Controller
 {
@@ -57,12 +58,19 @@ class PackageController extends Controller
 
         $photoData = $this->handlePhotoUpload($request->file('photo'), 'package_photos');
 
+        // do {
+        //     $orderNumber = strtoupper(Str::random(10));
+        // } while (Package::where('order_number', $orderNumber)->exists());
+        
+        $orderNumber = strtoupper(Str::uuid()->toString());
+
         $package = Package::create(array_merge([
             'name' => $validated['name'],
             'pickup' => $validated['pickup'],
             'destination' => $validated['destination'],
             'status' => $validated['status'] ?? 'active',
             'extraInfo' => $validated['extraInfo'],
+            'order_number' => $orderNumber,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ], $photoData));
