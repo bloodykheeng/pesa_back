@@ -15,9 +15,11 @@ class Order extends Model
         'address',
         'order_number',
         'charged_amount',
+        'amount_paid',
         'payment_status',
         'payment_mode',
         'delivery_status',
+        'balance_due',
         'created_by',
         'updated_by',
     ];
@@ -30,5 +32,16 @@ class Order extends Model
     public function products()
     {
         return $this->hasMany(OrderProduct::class, 'order_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function calculateBalanceDue()
+    {
+        $this->balance_due = $this->charged_amount - $this->amount_paid;
+        $this->save();
     }
 }

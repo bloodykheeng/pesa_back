@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProductTypeController;
@@ -97,6 +98,16 @@ Route::group(
          Route::apiResource('orders', OrderController::class);
          Route::get('my-orders', [OrderController::class, 'get_orders']);
          Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
+         Route::get('/customer-orders-with-balance', [OrderController::class, 'showCustomersOrdersWithBalance']);
+
+         Route::get('/calculate-overall-balance', [OrderController::class, 'calculateOverallBalance']);
+
+        // ================================Payment Apis============================
+        // for the Admin
+         Route::get('/orders-with-balance', [PaymentController::class, 'showOrdersWithBalance']);
+         Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
+        // for customer
+        Route::get('my-payments', [PaymentController::class, 'get_payments']);
 
          
         //Roles AND Permisions

@@ -42,6 +42,7 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        // Validate the request data
         $validated = $request->validate([
             'amount' => 'nullable|numeric',
             'charged_amount' => 'nullable|numeric',
@@ -55,32 +56,48 @@ class OrderController extends Controller
         ]);
 
         try {
+            // Check if the payment mode is BNPL
+            if ($validated['payment_mode'] === 'bnpl') {
+                // Check if the user has any BNPL orders with outstanding balances
+                $unpaidBnplOrder = Order::where('payment_mode', 'bnpl')
+                    ->where('balance_due', '>', 0)
+                    ->where('created_by', Auth::id())
+                    ->exists();
+
+                if ($unpaidBnplOrder) {
+                    return response()->json([
+                        'message' => 'You have an existing BNPL order with an outstanding balance. Please complete the payment before placing a new order.',
+                    ], 400);
+                }
+            }
+
             // Start a database transaction
             DB::beginTransaction();
 
+            // Generate a unique order number
             do {
                 $orderNumber = strtoupper(Str::random(10));
             } while (Order::where('order_number', $orderNumber)->exists());
-            
-            // $orderNumber = strtoupper(Str::uuid()->toString());
 
             // Create the Order
             $order = Order::create([
-                'status' => 'active',
+                'status' => 'pending',
                 'amount' => $validated['amount'],
                 'charged_amount' => $validated['charged_amount'],
                 'address' => $validated['address'],
                 'payment_status' => 'pending',
                 'delivery_status' => 'pending',
                 'payment_mode' => $validated['payment_mode'],
+                'balance_due' => $validated['amount'],
                 'order_number' => $orderNumber,
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
 
+            // If products are included, create order product records
             if (isset($validated['products'])) {
                 foreach ($validated['products'] as $productData) {
-                    // Create each OrderProductProduct record
+                    // Create each OrderProduct record
                     OrderProduct::create([
                         'product_id' => $productData['product_id'],
                         'order_id' => $order->id,
@@ -91,7 +108,7 @@ class OrderController extends Controller
                         'updated_by' => Auth::id(),
                     ]);
 
-                    // Update spare part quantity
+                    // Update product quantity
                     $product = Product::find($productData['product_id']);
                     if ($product) {
                         $product->decrement('quantity', $productData['quantity']);
@@ -102,11 +119,10 @@ class OrderController extends Controller
             // Commit the transaction if all operations succeed
             DB::commit();
 
-            // Load products relationship with the transaction
+            // Load products relationship with the order
             $order->load('products');
 
             return response()->json(['message' => 'Order created successfully', 'data' => $order], 201);
-
         } catch (\Exception $e) {
             // Rollback the transaction if an exception occurs
             DB::rollback();
@@ -115,6 +131,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Failed to create order', 'error' => $e->getMessage()], 500);
         }
     }
+
     public function update(Request $request, $id)
     {
         $order = Order::find($id);
@@ -187,7 +204,6 @@ class OrderController extends Controller
             $order->load('products');
 
             return response()->json(['message' => 'Order updated successfully', 'data' => $order]);
-
         } catch (\Exception $e) {
             // Rollback the transaction if an exception occurs
             DB::rollback();
@@ -211,24 +227,24 @@ class OrderController extends Controller
     }
 
     public function confirmReceipt(Request $request, $id)
-{
-    // Find the order by ID
-    $order = Order::find($id);
+    {
+        // Find the order by ID
+        $order = Order::find($id);
 
-    // Check if the order exists
-    if (!$order) {
-        return response()->json(['message' => 'Order not found'], 404);
+        // Check if the order exists
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // Update the delivery status to 'received'
+        $order->delivery_status = 'received';
+
+        // Save the changes
+        $order->save();
+
+        // Return a success response
+        return response()->json(['message' => 'Order status updated to received'], 200);
     }
-
-    // Update the delivery status to 'received'
-    $order->delivery_status = 'received';
-
-    // Save the changes
-    $order->save();
-
-    // Return a success response
-    return response()->json(['message' => 'Order status updated to received'], 200);
-}
 
 
     public function get_orders(Request $request)
@@ -236,5 +252,35 @@ class OrderController extends Controller
         $orders = Order::with('user', 'products.product')->where('created_by', Auth::user()->id)->orderBy('created_at', 'desc')->get();
 
         return response()->json($orders);
+    }
+
+
+    public function showCustomersOrdersWithBalance()
+    {
+        // Fetch orders with outstanding balances
+        $orders = Order::where('payment_mode', 'bnpl')
+            ->where('balance_due', '>', 0)
+            ->where('created_by', Auth::user()->id)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $orders
+        ]);
+    }
+
+
+    public function calculateOverallBalance()
+    {
+        // Calculate the total outstanding balance for the current user's orders
+        $totalBalance = Order::where('payment_mode', 'bnpl')
+            ->where('balance_due', '>', 0)
+            ->where('created_by', Auth::user()->id)
+            ->sum('balance_due');
+
+        return response()->json([
+            'success' => true,
+            'total_balance' => $totalBalance
+        ]);
     }
 }
