@@ -255,6 +255,20 @@ class OrderController extends Controller
     }
 
 
+    public function showOrdersWithBalance()
+    {
+        // Fetch orders with outstanding balances
+        $orders = Order::where('payment_mode', 'bnpl')
+            ->where('balance_due', '>', 0)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $orders
+        ]);
+    }
+
+
     public function showCustomersOrdersWithBalance()
     {
         // Fetch orders with outstanding balances

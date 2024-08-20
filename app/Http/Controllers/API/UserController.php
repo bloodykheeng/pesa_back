@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -326,6 +327,7 @@ class UserController extends Controller
                 'photo_url' => $user->photo_url,
                 'lastlogin' => $user->lastlogin,
                 'email' => $user->email,
+                'nin' => $user->nin,
                 'status' => $user->status,
                 'cloudinary_photo_url' => $user->cloudinary_photo_url,
                 // 'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -346,6 +348,7 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'nin' => 'required|string|nin|max:255|unique:users,nin,' . $id,
             'phone' => 'required|string|max:255|unique:users,phone,' . $id,
 
         ]);
@@ -361,6 +364,7 @@ class UserController extends Controller
             $user->update([
                 'name' => $validatedData['name'],
                 'email' => $validatedData['email'],
+                'nin' => $validatedData['nin'],
                 'phone' => $validatedData['phone'],
             ]);
 
@@ -373,6 +377,7 @@ class UserController extends Controller
             'photo_url' => $user->photo_url,
             'lastlogin' => $user->lastlogin,
             'email' => $user->email,
+            'nin' => $user->nin,
             'status' => $user->status,
             'cloudinary_photo_url' => $user->cloudinary_photo_url,
             'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -423,6 +428,41 @@ class UserController extends Controller
             // Return a generic error response
             return response(['message' => 'An error occurred'], 500);
         }
+    }
+
+
+    public function SaveToken(Request $request){
+
+      
+        $id = Auth::user()->id;
+        $user = User::find($id);
+        
+
+
+        if (!$user) return response()->json(["message" => "User Not Found!"], 404);
+
+        $validator = Validator::make($request->all(), [
+            'device_token' => 'required'
+        ]);
+
+        if ($validator->fails()) return response()->json($validator->errors(), 200);
+        try {
+
+
+            $user->update([
+                'device_token' => $request->device_token,
+            ]);
+
+            return response()->json([
+                'message' => "notification sent."
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+
+
+
+       
     }
 
 

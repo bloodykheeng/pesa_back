@@ -91,6 +91,8 @@ Route::group(
 
         Route::post('/change-password/{id}', [UserController::class, 'resetPassword']);
 
+        Route::post('/save-token', [UserController::class, 'SaveToken']);
+
          //=============== spare parts transactions ========================
          Route::apiResource('orders', OrderController::class)->except(['store']);
  
@@ -101,10 +103,11 @@ Route::group(
          Route::get('/customer-orders-with-balance', [OrderController::class, 'showCustomersOrdersWithBalance']);
 
          Route::get('/calculate-overall-balance', [OrderController::class, 'calculateOverallBalance']);
+         Route::get('/orders-with-balance', [OrderController::class, 'showOrdersWithBalance']);
 
         // ================================Payment Apis============================
         // for the Admin
-         Route::get('/orders-with-balance', [PaymentController::class, 'showOrdersWithBalance']);
+         
          Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
