@@ -26,7 +26,7 @@ class AuthController extends Controller
             'status' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'nin' => 'nullable|string|nin|max:255|unique:users',
+            'nin' => 'nullable|string|max:255|unique:users',
             'role' => 'required|exists:roles,name', // Validate that the role exists
             // 'vendor_id' => 'nullable|exists:vendors,id',
             // 'phone' => 'required|string|regex:/^\+\d{12}$/', // Validate phone number with country code

@@ -93,10 +93,10 @@ Route::group(
 
         Route::post('/save-token', [UserController::class, 'SaveToken']);
 
-         //=============== spare parts transactions ========================
+         //=============== orders transactions ========================
          Route::apiResource('orders', OrderController::class)->except(['store']);
  
-         //=============== spare parts transactions ========================
+         //=============== orders transactions ========================
          Route::apiResource('orders', OrderController::class);
          Route::get('my-orders', [OrderController::class, 'get_orders']);
          Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);

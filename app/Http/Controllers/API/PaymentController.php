@@ -100,7 +100,7 @@ class PaymentController extends Controller
         // Add the payment record
         Payment::create([
             'order_id' => $order->id,
-            'user_id' => $order->user_id,
+            'user_id' => $order->created_by,
             'amount' => $amount,
             'payment_mode' => $paymentMode,
             'created_by' => Auth::id(),

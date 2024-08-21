@@ -83,7 +83,7 @@ class OrderController extends Controller
             $order = Order::create([
                 'status' => 'pending',
                 'amount' => $validated['amount'],
-                'charged_amount' => $validated['charged_amount'],
+                'charged_amount' => $validated['amount'],
                 'address' => $validated['address'],
                 'payment_status' => 'pending',
                 'delivery_status' => 'pending',
