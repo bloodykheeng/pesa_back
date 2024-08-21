@@ -125,12 +125,10 @@ class PaymentController extends Controller
 
     public function get_payments(Request $request)
     {
-        $payment = Payment::with('order')->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc')->get();
+        $payment = Payment::with(['order', 'order.products'])->where('user_id', Auth::user()->id)->orderBy('created_at', 'desc')->get();
 
         return response()->json($payment);
     }
-
-
 
 
 
