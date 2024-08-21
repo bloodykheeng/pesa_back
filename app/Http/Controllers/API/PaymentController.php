@@ -71,6 +71,7 @@ class PaymentController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'payment_method' => 'required|string',
+            'transaction_number' => 'required|string',
         ]);
 
         // Fetch the order
@@ -85,7 +86,7 @@ class PaymentController extends Controller
         }
 
         // Record the payment
-        $this->makePayment($order, $request->amount, $request->payment_method);
+        $this->makePayment($order, $request->amount, $request->payment_method, $request->transaction_number);
 
         return response()->json([
             'success' => true,
@@ -95,7 +96,7 @@ class PaymentController extends Controller
     }
 
 
-    public function makePayment(Order $order, $amount, $paymentMode)
+    public function makePayment(Order $order, $amount, $paymentMode, $transactionNumber)
     {
         // Add the payment record
         Payment::create([
@@ -103,6 +104,7 @@ class PaymentController extends Controller
             'user_id' => $order->created_by,
             'amount' => $amount,
             'payment_mode' => $paymentMode,
+            'transaction_number' => $transactionNumber,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
