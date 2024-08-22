@@ -26,6 +26,7 @@ class AuthController extends Controller
             'status' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
+            'nin' => 'nullable|string|max:255|unique:users',
             'role' => 'required|exists:roles,name', // Validate that the role exists
             // 'vendor_id' => 'nullable|exists:vendors,id',
             // 'phone' => 'required|string|regex:/^\+\d{12}$/', // Validate phone number with country code
@@ -43,6 +44,7 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
+                'nin' => $request->nin,
                 'status' => $request->status,
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone,
@@ -93,6 +95,7 @@ class AuthController extends Controller
             'name' => $user->name,
             'lastlogin' => $user->lastlogin,
             'email' => $user->email,
+            'nin' => $user->nin,
             'status' => $user->status,
             'photo_url' => $user->photo_url,
             'permissions' => $user->getAllPermissions()->pluck('name'), // pluck for simplified array
@@ -142,6 +145,7 @@ class AuthController extends Controller
             'photo_url' => $user->photo_url,
             'lastlogin' => $user->lastlogin,
             'email' => $user->email,
+            'nin' => $user->nin,
             'status' => $user->status,
             'cloudinary_photo_url' => $user->cloudinary_photo_url,
             'permissions' => $user->getAllPermissions()->pluck('name'),
@@ -211,6 +215,7 @@ class AuthController extends Controller
                         'name' => $user->name,
                         'lastlogin' => $user->lastlogin,
                         'email' => $user->email,
+                        'nin' => $user->nin,
                         'status' => $user->status,
                         'photo_url' => $user->photo_url,
                         'permissions' => $user->getAllPermissions()->pluck('name'), // pluck for simplified array
@@ -256,6 +261,7 @@ class AuthController extends Controller
                         'name' => $provider->user->name,
                         'lastlogin' => $provider->user->lastlogin,
                         'email' => $provider->user->email,
+                        'nin' => $user->nin,
                         'status' => $provider->user->status,
                         'photo_url' => $provider->user->photo_url,
                         'permissions' => $provider->user->getAllPermissions()->pluck('name'), // pluck for simplified array

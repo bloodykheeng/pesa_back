@@ -6,6 +6,7 @@ use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProductTypeController;
@@ -90,13 +91,26 @@ Route::group(
 
         Route::post('/change-password/{id}', [UserController::class, 'resetPassword']);
 
-         //=============== spare parts transactions ========================
+        Route::post('/save-token', [UserController::class, 'SaveToken']);
+
+         //=============== orders transactions ========================
          Route::apiResource('orders', OrderController::class)->except(['store']);
  
-         //=============== spare parts transactions ========================
+         //=============== orders transactions ========================
          Route::apiResource('orders', OrderController::class);
          Route::get('my-orders', [OrderController::class, 'get_orders']);
          Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
+         Route::get('/customer-orders-with-balance', [OrderController::class, 'showCustomersOrdersWithBalance']);
+
+         Route::get('/calculate-overall-balance', [OrderController::class, 'calculateOverallBalance']);
+         Route::get('/orders-with-balance', [OrderController::class, 'showOrdersWithBalance']);
+
+        // ================================Payment Apis============================
+        // for the Admin
+         
+         Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
+        // for customer
+        Route::get('my-payments', [PaymentController::class, 'get_payments']);
 
          
         //Roles AND Permisions
