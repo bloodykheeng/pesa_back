@@ -117,6 +117,9 @@ class PaymentController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            $order->amount_paid += $validated['amount'];
+            $order->calculateBalanceDue();
+
             // Commit the transaction if all operations succeed
             DB::commit();
 

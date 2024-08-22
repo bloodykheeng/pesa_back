@@ -13,6 +13,7 @@ use App\Http\Controllers\API\ProductTypeController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
+use App\Http\Controllers\API\PushNotificationTestController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +57,9 @@ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::cla
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
+
+Route::post('/test-notification', [PushNotificationTestController::class, 'sendPushNotification']);
+
 
 //=============================== private routes ==================================
 Route::group(
