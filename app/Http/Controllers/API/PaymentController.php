@@ -8,7 +8,6 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PaymentController extends Controller
 {
@@ -75,16 +74,35 @@ class PaymentController extends Controller
             'user_id' => 'required|exists:users,id',
             'amount' => 'required|numeric',
             'payment_method' => 'required|string',
+            'details' => 'nullable|string',
+            'transaction_number' => 'required|string|unique:payments,transaction_number',
         ]);
 
         try {
             // Start a database transaction
             DB::beginTransaction();
 
-            // Generate a unique transaction number
-            do {
-                $transactionNumber = strtoupper(Str::random(10));
-            } while (Payment::where('transaction_number', $transactionNumber)->exists());
+            // Fetch the order
+            $order = Order::findOrFail($validated['order_id']);
+
+            // Get all payments made towards this order
+            $totalPayments = Payment::where('order_id', $order->id)->sum('amount');
+
+            // Calculate the new total after adding the new payment amount
+            $newTotalPayments = $totalPayments + $validated['amount'];
+
+            // Check if the new total exceeds the order amount
+            if ($newTotalPayments > $order->charged_amount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total payment amount exceeds the order total.',
+                ], 400); // 400 Bad Request
+            }
+
+            // // Generate a unique transaction number
+            // do {
+            //     $transactionNumber = strtoupper(Str::random(10));
+            // } while (Payment::where('transaction_number', $transactionNumber)->exists());
 
             // Create the Payment
             $payment = Payment::create([
@@ -92,7 +110,9 @@ class PaymentController extends Controller
                 'user_id' => $validated['user_id'],
                 'amount' => $validated['amount'],
                 'payment_method' => $validated['payment_method'],
-                'transaction_number' => $transactionNumber,
+                // 'transaction_number' => $transactionNumber,
+                'details' => $validated['details'],
+                'transaction_number' => $validated['transaction_number'],
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
@@ -120,8 +140,10 @@ class PaymentController extends Controller
             return response()->json(['message' => 'Payment not found'], 404);
         }
 
+        // Validate the request data
         $validated = $request->validate([
             'amount' => 'nullable|numeric',
+            'details' => 'nullable|string',
             'payment_method' => 'nullable|string',
         ]);
 
@@ -129,10 +151,30 @@ class PaymentController extends Controller
             // Start a database transaction
             DB::beginTransaction();
 
+            // Fetch the order associated with this payment
+            $order = Order::findOrFail($payment->order_id);
+
+            // Calculate the total payments excluding the current payment being updated
+            $totalPaymentsExcludingCurrent = Payment::where('order_id', $order->id)
+                ->where('id', '!=', $payment->id)
+                ->sum('amount');
+
+            // Calculate the new total if the payment is updated
+            $newTotalPayments = $totalPaymentsExcludingCurrent + ($validated['amount'] ?? $payment->amount);
+
+            // Check if the new total exceeds the order amount
+            if ($newTotalPayments > $order->charged_amount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total payment amount exceeds the order total.',
+                ], 400); // 400 Bad Request
+            }
+
             // Update the Payment
             $payment->update([
                 'amount' => $validated['amount'] ?? $payment->amount,
                 'payment_method' => $validated['payment_method'] ?? $payment->payment_method,
+                'details' => $validated['details'],
             ]);
 
             // Commit the transaction if all operations succeed

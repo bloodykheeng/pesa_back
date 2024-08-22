@@ -16,11 +16,11 @@ return new class extends Migration
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('user_id');
             $table->decimal('amount', 10, 2);
-            $table->string('payment_mode')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->text('details')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->timestamps();
-
 
             $table->foreign('order_id')->references('id')->on('orders')->onDelete('CASCADE');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('CASCADE');
