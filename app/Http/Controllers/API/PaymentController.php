@@ -5,12 +5,22 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\FirebaseService;
 
 class PaymentController extends Controller
 {
+
+    protected $firebaseService;
+
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index(Request $request)
     {
         $query = Payment::query();
@@ -119,6 +129,9 @@ class PaymentController extends Controller
 
             $order->amount_paid += $validated['amount'];
             $order->calculateBalanceDue();
+
+            $user = User::find($validated['user_id']);
+            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #".$validated['transaction_number'], "You're payment of UGX" .$validated['amount']. "for order #'.$order->order_number.'has been received.");
 
             // Commit the transaction if all operations succeed
             DB::commit();

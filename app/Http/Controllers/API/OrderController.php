@@ -6,13 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\FirebaseService;
 
 class OrderController extends Controller
 {
+
+    protected $firebaseService;
+
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index(Request $request)
     {
         $query = Order::query();
@@ -47,6 +57,9 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+
+        $user = User::find(Auth::user()->id);
+
         // Validate the request data
         $validated = $request->validate([
             'amount' => 'nullable|numeric',
@@ -101,6 +114,8 @@ class OrderController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
+            
+
             // If products are included, create order product records
             if (isset($validated['products'])) {
                 foreach ($validated['products'] as $productData) {
@@ -125,6 +140,8 @@ class OrderController extends Controller
 
             // Commit the transaction if all operations succeed
             DB::commit();
+
+            $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order '.$orderNumber.' created successfully',);
 
             // Load products relationship with the order
             $order->load('products');
@@ -178,6 +195,10 @@ class OrderController extends Controller
             // Commit the transaction if all operations succeed
             DB::commit();
 
+            $user = User::find($order->created_by);
+
+            $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order#'.$order->order_number.'has been updated');
+
             // Load products relationship with the transaction
             $order->load('products');
 
@@ -219,6 +240,9 @@ class OrderController extends Controller
 
         // Save the changes
         $order->save();
+
+        $user = User::find($order->created_by);
+        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order#'.$order->order_number.'has been received.');
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to received'], 200);
