@@ -24,11 +24,6 @@ class Order extends Model
         'updated_by',
     ];
 
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
     public function products()
     {
         return $this->hasMany(OrderProduct::class, 'order_id');
@@ -43,5 +38,15 @@ class Order extends Model
     {
         $this->balance_due = $this->charged_amount - $this->amount_paid;
         $this->save();
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

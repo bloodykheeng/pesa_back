@@ -18,12 +18,17 @@ class OrderController extends Controller
         $query = Order::query();
 
         // Eager load relationships
-        $query->with('user', 'products.product');
+        $query->with('products.product', 'createdBy', 'updatedBy');
 
         // Apply filters if present
-        if ($request->has('user_id')) {
-            $query->where('user_id', $request->input('user_id'));
+        if ($request->has('created_by')) {
+            $query->where('created_by', $request->input('created_by'));
         }
+
+        if ($request->has('updated_by')) {
+            $query->where('updated_by', $request->input('updated_by'));
+        }
+
         // Add more filters as needed
 
         $orders = $query->get();
@@ -33,7 +38,7 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with('user', 'products.product')->find($id);
+        $order = Order::with('products.product', 'createdBy', 'updatedBy')->find($id);
         if (!$order) {
             return response()->json(['message' => 'Transaction not found'], 404);
         }
@@ -167,6 +172,7 @@ class OrderController extends Controller
                 'payment_mode' => $validated['payment_mode'] ?? $order->payment_mode,
                 'delivery_status' => $validated['delivery_status'] ?? $order->delivery_status,
                 'payment_status' => $validated['payment_status'] ?? $order->payment_status,
+                'updated_by' => Auth::id(),
             ]);
 
             // Commit the transaction if all operations succeed
