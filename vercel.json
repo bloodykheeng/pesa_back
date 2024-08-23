@@ -42,6 +42,20 @@
 
         "CACHE_DRIVER": "array",
         "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "cookie"
+        "SESSION_DRIVER": "cookie",
+
+        "REVERB_APP_ID": "168044",
+        "REVERB_APP_KEY": "qftkocscii5oz6os3hha",
+        "REVERB_APP_SECRET": "hpososbwm88ducxisycb",
+        "REVERB_HOST": "localhost",
+        "REVERB_PORT": "8080",
+        "REVERB_SCHEME": "http",
+
+        "VITE_REVERB_APP_KEY": "qftkocscii5oz6os3hha",
+        "VITE_REVERB_HOST": "localhost",
+        "VITE_REVERB_PORT": "8080",
+        "VITE_REVERB_SCHEME": "http",
+
+        "BROADCAST_CONNECTION": "reverb"
     }
 }
