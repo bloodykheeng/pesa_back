@@ -13,7 +13,7 @@ class FirebaseService
     {
         // Use storage_path helper to get the full path to the service account JSON file
 
-        $serviceAccountPath = storage_path('firebase-auth.json');
+        $serviceAccountPath = storage_path('elevate-pesa-firebase-auth.json');
 
         $factory = (new Factory)->withServiceAccount($serviceAccountPath);
         $this->messaging = $factory->createMessaging();

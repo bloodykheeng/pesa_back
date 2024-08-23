@@ -24,7 +24,7 @@ yarn-error.log
 /public/user_photos/*
 /public/vendor_photos/*
 
-/storage/firebase-auth.json
+/storage/elevate-pesa-firebase-auth.json
 
 
 /public/car_brand_logos/*
