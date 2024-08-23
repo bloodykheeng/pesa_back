@@ -16,21 +16,74 @@ class ChatMessageController extends Controller
     /**
      * Display a listing of the chat messages for a specific chat.
      */
-    public function index(Request $request, $chatId)
+    public function index(Request $request)
     {
+        // Define variables from request
+        $chatId = $request->query('chat_id');
+        $isRead = $request->query('is_read');
+        $senderId = $request->query('sender_id');
+        $receiverId = $request->query('reciver_id');
+        $name = $request->query('name');
+        $status = $request->query('status');
+        $createdBy = $request->query('created_by');
+        $updatedBy = $request->query('updated_by');
+
+        // Start query
         $query = ChatMessage::query();
 
         // Eager load relationships
         $query->with('sender', 'receiver', 'updatedBy');
 
         // Filter messages by chat_id
-        $query->where('chat_id', $chatId);
-
-        // Optional: Filter by read status
-        if ($request->has('is_read')) {
-            $query->where('is_read', $request->input('is_read'));
+        if (isset($chatId)) {
+            $query->where('chat_id', $chatId);
         }
 
+        // Optional: Filter by read status
+        if (isset($isRead)) {
+            $query->where('is_read', $isRead);
+        }
+
+        // Filter by sender and receiver, considering the reverse scenario
+        if (isset($senderId) && isset($receiverId)) {
+            $query->where(function ($query) use ($senderId, $receiverId) {
+                $query->where('sender_id', $senderId)
+                    ->where('reciver_id', $receiverId)
+                    ->orWhere(function ($query) use ($senderId, $receiverId) {
+                        $query->where('sender_id', $receiverId)
+                            ->where('reciver_id', $senderId);
+                    });
+            });
+        }
+
+        // Filter by sender_id if only sender_id is set
+        if (isset($senderId) && !isset($receiverId)) {
+            $query->where('sender_id', $senderId);
+        }
+
+        // Filter by reciver_id if only reciver_id is set
+        if (isset($receiverId) && !isset($senderId)) {
+            $query->where('reciver_id', $receiverId);
+        }
+
+        // Apply other filters if the parameters are provided
+        if (isset($name)) {
+            $query->where('name', 'like', "%$name%");
+        }
+
+        if (isset($status)) {
+            $query->where('status', $status);
+        }
+
+        if (isset($createdBy)) {
+            $query->where('created_by', $createdBy);
+        }
+
+        if (isset($updatedBy)) {
+            $query->where('updated_by', $updatedBy);
+        }
+
+        // Execute the query and get the results
         $messages = $query->get();
 
         return response()->json(['data' => $messages]);
@@ -64,10 +117,21 @@ class ChatMessageController extends Controller
         ]);
 
         try {
+            $receiver = User::find($validated['reciver_id']);
+            $sender = User::find($validated['sender_id']);
+
+            // //first send before sending to databses
+            // broadcast(new MessageSent($sender, $receiver, $validated['content']));
+
             // Check if there are any chat messages with the same sender and receiver
-            $existingMessage = ChatMessage::where('sender_id', $validated['sender_id'])
-                ->where('reciver_id', $validated['reciver_id'])
-                ->first();
+            // This approach ensures that you find a message between the two users, regardless of who sent the message.
+            $existingMessage = ChatMessage::where(function ($query) use ($validated) {
+                $query->where('sender_id', $validated['sender_id'])
+                    ->where('reciver_id', $validated['reciver_id']);
+            })->orWhere(function ($query) use ($validated) {
+                $query->where('sender_id', $validated['reciver_id'])
+                    ->where('reciver_id', $validated['sender_id']);
+            })->first();
 
             // If no such chat message exists, create a new chat
             if (!$existingMessage) {
@@ -91,9 +155,6 @@ class ChatMessageController extends Controller
                 'is_read' => false,
                 'updated_by' => Auth::id(),
             ]);
-
-            $receiver = User::find($validated['reciver_id']);
-            $sender = User::find($validated['sender_id']);
 
             broadcast(new MessageSent($sender, $receiver, $validated['content'], $chat));
             broadcast(new Example($sender, $validated['content']));
