@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\API\CategoryBrandController;
+use App\Http\Controllers\API\ChatController;
+use App\Http\Controllers\API\ChatMessageController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\MessageController;
@@ -112,6 +114,13 @@ Route::group(
         Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
+
+        //====================== chats ==========================
+        // Resource routes for ChatController
+        Route::resource('chats', ChatController::class);
+
+        // Resource routes for ChatMessageController
+        Route::resource('chat-messages', ChatMessageController::class);
 
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
