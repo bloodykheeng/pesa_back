@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Events\Example;
 use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\Chat;
@@ -94,7 +95,8 @@ class ChatMessageController extends Controller
             $receiver = User::find($validated['reciver_id']);
             $sender = User::find($validated['sender_id']);
 
-            broadcast(new MessageSent($receiver, $sender, $validated['content'], $chat));
+            broadcast(new MessageSent($sender, $receiver, $validated['content'], $chat));
+            broadcast(new Example($sender, $validated['content']));
 
             return response()->noContent();
 
