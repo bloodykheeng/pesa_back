@@ -13,7 +13,20 @@ class FirebaseService
     {
         // Use storage_path helper to get the full path to the service account JSON file
 
-        $serviceAccountPath = storage_path('elevate-pesa-firebase-auth.json');
+        // $serviceAccountPath = storage_path('elevate-pesa-firebase-auth.json');
+        $serviceAccountPath = [
+            'type' => env('GCP_TYPE'),
+            'project_id' => env('GCP_PROJECT_ID'),
+            'private_key_id' => env('GCP_PRIVATE_KEY_ID'),
+            'private_key' => str_replace('\\n', "\n", env('GCP_PRIVATE_KEY')),
+            'client_email' => env('GCP_CLIENT_EMAIL'),
+            'client_id' => env('GCP_CLIENT_ID'),
+            'auth_uri' => env('GCP_AUTH_URI'),
+            'token_uri' => env('GCP_TOKEN_URI'),
+            'auth_provider_x509_cert_url' => env('GCP_AUTH_PROVIDER_CERT_URL'),
+            'client_x509_cert_url' => env('GCP_CLIENT_CERT_URL'),
+            'universe_domain' => env('GCP_UNIVERSE_DOMAIN'),
+        ];
 
         $factory = (new Factory)->withServiceAccount($serviceAccountPath);
         $this->messaging = $factory->createMessaging();
