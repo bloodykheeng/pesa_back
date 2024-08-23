@@ -127,14 +127,23 @@ class PaymentController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            $order->amount_paid += $validated['amount'];
-            $order->calculateBalanceDue();
-
-            $user = User::find($validated['user_id']);
-            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #".$validated['transaction_number'], "You're payment of UGX" .$validated['amount']. "for order #'.$order->order_number.'has been received.");
+           
 
             // Commit the transaction if all operations succeed
             DB::commit();
+
+            $order->amount_paid += $validated['amount'];
+            $order->calculateBalanceDue();
+
+            // If balance due is 0, mark the order as completed
+            if ($order->balance_due <= 0) {
+                $order->status = 'completed';
+                $order->payment_status = 'completed';
+                $order->save();
+            }
+
+            $user = User::find($validated['user_id']);
+            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #".$validated['transaction_number'], "You're payment of UGX " .$validated['amount']. " for order #" .$order->order_number." has been received.");
 
             // Load relationships with the payment
             $payment->load('order', 'customer', 'createdBy', 'updatedBy');

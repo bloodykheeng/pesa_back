@@ -79,6 +79,8 @@ class OrderController extends Controller
                 // Check if the user has any BNPL orders with outstanding balances
                 $unpaidBnplOrder = Order::where('payment_mode', 'bnpl')
                     ->where('balance_due', '>', 0)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('delivery_status', '!=', 'cancelled')
                     ->where('created_by', Auth::id())
                     ->exists();
 
@@ -197,7 +199,24 @@ class OrderController extends Controller
 
             $user = User::find($order->created_by);
 
-            $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order#'.$order->order_number.'has been updated');
+            $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# '.$order->order_number.' status has been updated');
+
+            if($order->payment_status === 'paid'){
+
+                $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# '.$order->order_number.' has been received');
+            }
+
+            if($order->delivery_status === 'delivered'){
+
+                $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# '.$order->order_number.' has been delivered');
+            }
+
+            if($order->delivery_status === 'cancelled' ){
+
+                $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# '.$order->order_number.' has been cancelled');
+            }
+
+            
 
             // Load products relationship with the transaction
             $order->load('products');
@@ -242,11 +261,38 @@ class OrderController extends Controller
         $order->save();
 
         $user = User::find($order->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order#'.$order->order_number.'has been received.');
+        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# '.$order->order_number.' has been received.');
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to received'], 200);
     }
+
+
+    public function cancelOrder(Request $request, $id)
+    {
+        // Find the order by ID
+        $order = Order::find($id);
+
+        // Check if the order exists
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // Update the delivery status to 'received'
+        $order->delivery_status = 'cancelled';
+        $order->payment_status = 'cancelled';
+        $order->status = 'cancelled';
+
+        // Save the changes
+        $order->save();
+
+        $user = User::find($order->created_by);
+        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# '.$order->order_number.' has been cancelled.');
+
+        // Return a success response
+        return response()->json(['message' => 'Order status updated to cancelled'], 200);
+    }
+
 
     public function get_orders(Request $request)
     {
@@ -287,6 +333,8 @@ class OrderController extends Controller
         // Calculate the total outstanding balance for the current user's orders
         $totalBalance = Order::where('payment_mode', 'bnpl')
             ->where('balance_due', '>', 0)
+            ->where('status', '!=' ,'cancelled')
+            ->where('delivery_status' , '!=' ,'cancelled')
             ->where('created_by', Auth::user()->id)
             ->sum('balance_due');
 

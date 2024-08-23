@@ -10,12 +10,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use App\Services\FirebaseService;
 
 class PackageController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+     protected $firebaseService;
+
+     public function __construct(FirebaseService $firebaseService)
+     {
+         $this->firebaseService = $firebaseService;
+     }
+
+
     public function index()
     {
         $packages = Package::with(['updatedBy', 'createdBy'])->get();
@@ -80,6 +90,9 @@ class PackageController extends Controller
             'updated_by' => Auth::id(),
         ], $photoData));
 
+        $user = User::find($package->created_by);
+        $this->firebaseService->sendNotification($user->device_token, 'New Package Order', 'Package order #'.$orderNumber.' has been created successfully',);
+
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);
     }
 
@@ -119,7 +132,54 @@ class PackageController extends Controller
 
         $package->update($validated);
 
+        $user = User::find($package->created_by);
+
+        if($package->status === 'processing'){
+
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being processed');
+        }
+
+        if($package->status === 'transit'){
+
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being transported');
+        }
+
+        if($package->status === 'delivered' ){
+
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' has been delivered');
+        }
+
+        if($package->status === 'cancelled' ){
+
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being cancelled');
+        }
+
         return response()->json(['message' => 'Package updated successfully', 'data' => $package]);
+    }
+
+
+
+    public function cancelPackageOrder(Request $request, $id)
+    {
+        // Find the order by ID
+        $package = Package::find($id);
+
+        // Check if the order exists
+        if (!$package) {
+            return response()->json(['message' => 'Package not found'], 404);
+        }
+
+        // Update the delivery status to 'received'
+        $package->status = 'cancelled';
+
+        // Save the changes
+        $package->save();
+
+        $user = User::find($package->created_by);
+        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# '.$package->order_number.' has been cancelled.');
+
+        // Return a success response
+        return response()->json(['message' => 'Package status updated to cancelled'], 200);
     }
 
     public function destroy($id)

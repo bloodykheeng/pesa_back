@@ -84,6 +84,7 @@ Route::group(
         // ===================Packages routes=========================================
         Route::resource('packages', PackageController::class);
         Route::get('my-packages', [PackageController::class, 'myPackages']);
+        Route::post('/cancel-package-order/{id}', [PackageController::class, 'cancelPackageOrder']);
 
         //======================== User Management =================================
         Route::Resource('users', UserController::class);
@@ -104,6 +105,7 @@ Route::group(
         Route::apiResource('orders', OrderController::class);
         Route::get('my-orders', [OrderController::class, 'get_orders']);
         Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
+        Route::post('/cancel-order/{id}', [OrderController::class, 'cancelOrder']);
         Route::get('/customer-orders-with-balance', [OrderController::class, 'showCustomersOrdersWithBalance']);
 
         Route::get('/calculate-overall-balance', [OrderController::class, 'calculateOverallBalance']);
