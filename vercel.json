@@ -56,6 +56,18 @@
         "VITE_REVERB_PORT": "8080",
         "VITE_REVERB_SCHEME": "http",
 
-        "BROADCAST_CONNECTION": "reverb"
+        "BROADCAST_CONNECTION": "reverb",
+
+        "GCP_TYPE": "service_account",
+        "GCP_PROJECT_ID": "elevate-pesa",
+        "GCP_PRIVATE_KEY_ID": "6c7809cdebe33837a5e196fd6ac27e00e035e544",
+        "GCP_PRIVATE_KEY": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCbuzksvlH+Jzfp\n5pDoZByk9XVypWExh8VTgxf4NxGL09tPjEQgQid11YCinGRIMR3Kk7uap4zSiB9z\nAaYPY8qSODcF9jmCokDXpIny+7Uz6LtHUNaLtao8zpxacFU2BIPgmEaqbNSTEUzF\nXi+SLsXW264GCFKUIq1vQEzOZEj+wt3vMlkIJYtE+/07cLycl7eudIH66CgbvuTj\nIayTs6nZUdITKflKGXfuk4heyVp5TXeRhcQ4SvMOWSQ+3jIefiph2TwEJqkn6Ewf\nZfp6dPcqippuotMv0j0UsW/jXQUFLNSeGG0bmw9pLxV1QzLqpOLo95V+Kca6XRlf\nFl0Uwu0lAgMBAAECggEACJnz67p8VV0Nq8vaE5fZ9CuBh+pF/sIYvkbWl1VVUQOL\n0K424hA9VTcMYo7gRBOAaXy05zMbZlJx6Dx+U0nH+cEEmv3xSbuT+MUkAGlyJfKU\nC3mVzAQl6bNgs+cR8ciYjxpiBs45hID3XExaNMkEENyz1S32/6sVqLgktd6YoIeF\nNOCxGKRMawL02Zvk+hIpmVamXG8IaMzE+3S158DWQ9dteve5BuQLq2UtvNlSqwdh\nx23KXQ/gw/R6gnA+DAEYQ+qvTTrkDbRhyI8I0efR9man9sZxQFuzWtU6PC7rfVTe\nQj0fB/aYfkqPQWigGqL/MEHXxJEANu53hsD44RnyCQKBgQDWnE9R4hxPw1IJBqgT\nYQOuPlEbHFfG63GhQcktz357b09zqSKtsEqVcpL033MU0wGqVO47kjHz5ggmuAWD\nV8/BmBz+5GIVGnroDIao5f3/gFJYWIT1yDFN8/KKPwisJ7lT4UeZncUjm8DitX/x\nImVfhTohwZhOyXGhOS5yYaWIPQKBgQC5w/HmOJc0cpdPfMfFXYP4f/HqugsBxwAI\nQouewOboPoA7sk+TIRQi1DRoJGaE/hztBb3BsoumrU/F2xheszjv1T/AKZEtjNt0\nYSz7MiZRKsSwPhTzrdMh55z/iGsSh+LiqfDu2vyXj8GT1iMoF1hC0bHQ/c8Z/X7l\nB0PmhZTfCQKBgHxp5433wCP5fpBe/IcngcO8urY1yyk1iw1KHv/gv1l9oRjTH5iD\nj+ltn4Y4F/YlkVyWmfmM+kqDu4v+uKt496cqsPyPl9DWJhRqVpKJqqM5WAOBZas6\n4GJpntzISBXNfaIEAscqcIQBImQLhl1bbFtg19+D5PEf1TD6/lMvCpCdAoGAE8bB\nfPHvXv0IEMVG+0L+ZrkwRv3xaAoIfdifxpHgwz7MJg7Qm+g8nYyb265sX6Ix8CXZ\nUsKwTVlMEdNGX+aSnC3GsK18MC47usMRp9hp7eAwulaRonOR850VwLqEM5/Vzq2q\n4bLci0IZqKR2b7E0i0CJvqcWojyzgqxoVSVJeQkCgYAyGnCbvOH4bHakKxSQT6Xj\nLN7UjGcYo5CPTvp3XxyKK1f5jdTSWYaLU7VzJrJLnvnTAUZuXbCixPTtsz375ywF\nIjuS1CCYH6Z60Im5N7pi2kJuFkG+Ng2CB4Z1LI7bOg6XzYUjb8EBBhJTzVRd1Pb6\nCYPIRAXN1fgTLG4xMH6ikQ==\n-----END PRIVATE KEY-----\n",
+        "GCP_CLIENT_EMAIL": "firebase-adminsdk-tdy9j@elevate-pesa.iam.gserviceaccount.com",
+        "GCP_CLIENT_ID": "113491369257507630693",
+        "GCP_AUTH_URI": "https://accounts.google.com/o/oauth2/auth",
+        "GCP_TOKEN_URI": "https://oauth2.googleapis.com/token",
+        "GCP_AUTH_PROVIDER_CERT_URL": "https://www.googleapis.com/oauth2/v1/certs",
+        "GCP_CLIENT_CERT_URL": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-tdy9j%40elevate-pesa.iam.gserviceaccount.com",
+        "GCP_UNIVERSE_DOMAIN": "googleapis.com"
     }
 }
