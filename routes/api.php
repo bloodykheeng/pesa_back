@@ -16,6 +16,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
 use App\Http\Controllers\API\PushNotificationTestController;
+use App\Http\Controllers\API\ReferalController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
@@ -120,6 +121,9 @@ Route::group(
         Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
+
+        //=============== Referals ========================
+        Route::apiResource('referals', ReferalController::class);
 
         //====================== chats ==========================
         // Resource routes for ChatController
