@@ -5,10 +5,10 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Referal;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Services\FirebaseService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ReferalController extends Controller
 {
@@ -24,7 +24,10 @@ class ReferalController extends Controller
      */
     public function index()
     {
-        $referals = Referal::with(['updatedBy', 'createdBy'])->get();
+        $query = Referal::with(['updatedBy', 'createdBy'])->query();
+
+        $query->latest();
+        $referals = $query->get();
         return response()->json(['data' => $referals]);
     }
 
