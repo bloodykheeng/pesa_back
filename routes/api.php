@@ -12,10 +12,11 @@ use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\ProductTypeController;
+use App\Http\Controllers\API\PushNotificationTestController;
+use App\Http\Controllers\API\ReferalController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
-use App\Http\Controllers\API\PushNotificationTestController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
@@ -61,7 +62,6 @@ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::cla
 // })->middleware('auth:sanctum');
 
 Route::post('/test-notification', [PushNotificationTestController::class, 'sendPushNotification']);
-
 
 //=============================== private routes ==================================
 Route::group(
@@ -121,7 +121,15 @@ Route::group(
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
 
-      
+        //=============== Referals ========================
+        Route::apiResource('referals', ReferalController::class);
+
+        //====================== chats ==========================
+        // Resource routes for ChatController
+        Route::resource('chats', ChatController::class);
+
+        // Resource routes for ChatMessageController
+        Route::resource('chat-messages', ChatMessageController::class);
 
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
