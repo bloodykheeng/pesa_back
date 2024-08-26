@@ -24,7 +24,7 @@ class ReferalController extends Controller
      */
     public function index()
     {
-        $query = Referal::with(['updatedBy', 'createdBy'])->query();
+        $query = Referal::with(['updatedBy', 'createdBy']);
 
         $query->latest();
         $referals = $query->get();
