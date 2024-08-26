@@ -121,12 +121,7 @@ Route::group(
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
 
-        //====================== chats ==========================
-        // Resource routes for ChatController
-        Route::resource('chats', ChatController::class);
-
-        // Resource routes for ChatMessageController
-        Route::resource('chat-messages', ChatMessageController::class);
+      
 
         //Roles AND Permisions
         Route::get('/roles', [UserRolesController::class, 'getAssignableRoles']);
