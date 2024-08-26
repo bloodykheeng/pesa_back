@@ -26,14 +26,6 @@ class UserController extends Controller
 
         $query = User::query();
 
-        // Check if vendor_id is provided and not null
-        if ($request->has('vendor_id') && $request->vendor_id !== null) {
-            // Filter users by the provided vendor_id
-            $query->whereHas('vendors', function ($query) use ($request) {
-                $query->where('vendor_id', $request->vendor_id);
-            });
-        }
-
         // Filter by role if provided
         if ($request->has('role') && $request->role !== null) {
             $query->role($request->role); // This uses the role scope provided by Spatie's permission package
@@ -78,8 +70,15 @@ class UserController extends Controller
 
         $users = $query->get();
 
+        // Use collection to add the role field
+        $usersWithRoles = $users->map(function ($user) {
+            $userData = $user->toArray();
+            $userData['role'] = $user->roles->first()->name ?? null;
+            return $userData;
+        });
+
         // Return the paginated response
-        return response()->json(['data' => $users]);
+        return response()->json(['data' => $usersWithRoles]);
     }
 
     public function show($id)
