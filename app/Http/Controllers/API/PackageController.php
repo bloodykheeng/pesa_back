@@ -5,12 +5,12 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\User;
+use App\Services\FirebaseService;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use App\Services\FirebaseService;
 
 class PackageController extends Controller
 {
@@ -18,17 +18,76 @@ class PackageController extends Controller
      * Display a listing of the resource.
      */
 
-     protected $firebaseService;
+    protected $firebaseService;
 
-     public function __construct(FirebaseService $firebaseService)
-     {
-         $this->firebaseService = $firebaseService;
-     }
-
-
-    public function index()
+    public function __construct(FirebaseService $firebaseService)
     {
-        $packages = Package::with(['updatedBy', 'createdBy'])->get();
+        $this->firebaseService = $firebaseService;
+    }
+
+
+
+    public function index(Request $request)
+    {
+        $query = Package::query();
+
+        // Eager load relationships
+        $query->with(['updatedBy', 'createdBy']);
+
+        // Apply filters if present
+        if ($request->has('created_by')) {
+            $query->where('created_by', $request->input('created_by'));
+        }
+
+        if ($request->has('updated_by')) {
+            $query->where('updated_by', $request->input('updated_by'));
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->has('pickup')) {
+            $query->where('pickup', 'like', '%' . $request->input('pickup') . '%');
+        }
+
+        if ($request->has('destination')) {
+            $query->where('destination', 'like', '%' . $request->input('destination') . '%');
+        }
+
+        if ($request->has('order_number')) {
+            $query->where('order_number', $request->input('order_number'));
+        }
+
+        // Add date range filter
+        if ($request->has('start_date') && $request->has('end_date')) {
+            $query->whereBetween('created_at', [$request->input('start_date'), $request->input('end_date')]);
+        }
+
+        // Add search functionality
+        if ($request->has('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('pickup', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('destination', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('order_number', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        // Add sorting
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortOrder = $request->input('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // // Paginate the results
+        // $perPage = $request->input('per_page', 15);
+        // $packages = $query->paginate($perPage);
+
+        $query->latest();
+
+        $packages = $query->get();
+
         return response()->json(['data' => $packages]);
     }
 
@@ -91,7 +150,7 @@ class PackageController extends Controller
         ], $photoData));
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'New Package Order', 'Package order #'.$orderNumber.' has been created successfully',);
+        $this->firebaseService->sendNotification($user->device_token, 'New Package Order', 'Package order #' . $orderNumber . ' has been created successfully', );
 
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);
     }
@@ -134,30 +193,28 @@ class PackageController extends Controller
 
         $user = User::find($package->created_by);
 
-        if($package->status === 'processing'){
+        if ($package->status === 'processing') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being processed');
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->order_number . ' is being processed');
         }
 
-        if($package->status === 'transit'){
+        if ($package->status === 'transit') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being transported');
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->order_number . ' is being transported');
         }
 
-        if($package->status === 'delivered' ){
+        if ($package->status === 'delivered') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' has been delivered');
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->order_number . ' has been delivered');
         }
 
-        if($package->status === 'cancelled' ){
+        if ($package->status === 'cancelled') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# '.$package->order_number.' is being cancelled');
+            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->order_number . ' is being cancelled');
         }
 
         return response()->json(['message' => 'Package updated successfully', 'data' => $package]);
     }
-
-
 
     public function cancelPackageOrder(Request $request, $id)
     {
@@ -176,7 +233,7 @@ class PackageController extends Controller
         $package->save();
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# '.$package->order_number.' has been cancelled.');
+        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->order_number . ' has been cancelled.');
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to cancelled'], 200);

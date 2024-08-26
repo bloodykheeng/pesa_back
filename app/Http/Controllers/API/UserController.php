@@ -5,13 +5,14 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -62,21 +63,23 @@ class UserController extends Controller
         // }
 
         $query->latest();
-        // Pagination
-        $perPage = $request->query('per_page', 10); // Default to 10 per page
-        $page = $request->query('page', 1); // Default to first page
+        // // Pagination
+        // $perPage = $request->query('per_page', 10); // Default to 10 per page
+        // $page = $request->query('page', 1); // Default to first page
 
-        $paginatedUsers = $query->paginate($perPage);
+        // $paginatedUsers = $query->paginate($perPage);
 
-        // Adding role names and permissions to each user in the data collection
-        $paginatedUsers->getCollection()->transform(function ($user) {
-            $user->role = $user->getRoleNames()->first() ?? "";
-            $user->permissions = $user->getAllPermissions()->pluck('name') ?? null;
-            return $user;
-        });
+        // // Adding role names and permissions to each user in the data collection
+        // $paginatedUsers->getCollection()->transform(function ($user) {
+        //     $user->role = $user->getRoleNames()->first() ?? "";
+        //     $user->permissions = $user->getAllPermissions()->pluck('name') ?? null;
+        //     return $user;
+        // });
+
+        $users = $query->get();
 
         // Return the paginated response
-        return response()->json($paginatedUsers);
+        return response()->json(['data' => $users]);
     }
 
     public function show($id)
@@ -287,7 +290,6 @@ class UserController extends Controller
         }
     }
 
-
     public function update_profile_photo(Request $request)
     {
         $validated = $request->validate([
@@ -300,20 +302,19 @@ class UserController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-            if ($request->hasFile('photo')) {
-                // return response()->json(['message' => 'testing'], 404);
-                // Delete existing photo
-                if ($user->cloudinary_photo_public_id) {
-                    $this->deleteCloudinaryPhoto($user->cloudinary_photo_public_id);
-                } elseif ($user->photo_url) {
-                    $this->deleteLocalPhoto($user->photo_url);
-                }
-    
-                // Upload new photo
-                $photoData = $this->handlePhotoUpload($request->file('photo'), 'user_photos');
-                $validated = array_merge($validated, $photoData);
-            
-    
+        if ($request->hasFile('photo')) {
+            // return response()->json(['message' => 'testing'], 404);
+            // Delete existing photo
+            if ($user->cloudinary_photo_public_id) {
+                $this->deleteCloudinaryPhoto($user->cloudinary_photo_public_id);
+            } elseif ($user->photo_url) {
+                $this->deleteLocalPhoto($user->photo_url);
+            }
+
+            // Upload new photo
+            $photoData = $this->handlePhotoUpload($request->file('photo'), 'user_photos');
+            $validated = array_merge($validated, $photoData);
+
             $validated['updated_by'] = Auth::id();
             $user->update($validated);
 
@@ -370,28 +371,27 @@ class UserController extends Controller
 
             DB::commit();
             return response()->json([
-                'message' => 'User updated successfully!', 
-            'id' => $user->id,
-            'token_type' => 'Bearer',
-            'name' => $user->name,
-            'photo_url' => $user->photo_url,
-            'lastlogin' => $user->lastlogin,
-            'email' => $user->email,
-            'nin' => $user->nin,
-            'status' => $user->status,
-            'cloudinary_photo_url' => $user->cloudinary_photo_url,
-            'permissions' => $user->getAllPermissions()->pluck('name'),
-            'role' => $user->getRoleNames()->first() ?? "",
-            'phone' => $user->phone,
-            'date_of_birth' => $user->date_of_birth,
-            'agree' => $user->agree,
+                'message' => 'User updated successfully!',
+                'id' => $user->id,
+                'token_type' => 'Bearer',
+                'name' => $user->name,
+                'photo_url' => $user->photo_url,
+                'lastlogin' => $user->lastlogin,
+                'email' => $user->email,
+                'nin' => $user->nin,
+                'status' => $user->status,
+                'cloudinary_photo_url' => $user->cloudinary_photo_url,
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+                'role' => $user->getRoleNames()->first() ?? "",
+                'phone' => $user->phone,
+                'date_of_birth' => $user->date_of_birth,
+                'agree' => $user->agree,
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Update failed: ' . $e->getMessage()], 500);
         }
     }
-
 
     public function resetPassword(Request $request, $id)
     {
@@ -430,42 +430,38 @@ class UserController extends Controller
         }
     }
 
+    public function SaveToken(Request $request)
+    {
 
-    public function SaveToken(Request $request){
-
-      
         $id = Auth::user()->id;
         $user = User::find($id);
-        
 
-
-        if (!$user) return response()->json(["message" => "User Not Found!"], 404);
+        if (!$user) {
+            return response()->json(["message" => "User Not Found!"], 404);
+        }
 
         $validator = Validator::make($request->all(), [
-            'device_token' => 'required'
+            'device_token' => 'required',
         ]);
 
-        if ($validator->fails()) return response()->json($validator->errors(), 200);
-        try {
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 200);
+        }
 
+        try {
 
             $user->update([
                 'device_token' => $request->device_token,
             ]);
 
             return response()->json([
-                'message' => "notification sent."
+                'message' => "notification sent.",
             ], 200);
         } catch (Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
 
-
-
-       
     }
-
-
 
     private function uploadPhoto($photo, $folderPath)
     {

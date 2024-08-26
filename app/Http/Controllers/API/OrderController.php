@@ -40,6 +40,7 @@ class OrderController extends Controller
         }
 
         // Add more filters as needed
+        $query->latest();
 
         $orders = $query->get();
 

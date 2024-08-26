@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\FirebaseService;
 
 class PaymentController extends Controller
 {
@@ -61,6 +61,7 @@ class PaymentController extends Controller
             $query->where('amount', '<=', $request->input('amount_max'));
         }
 
+        $query->latest();
         // Fetch the filtered results
         $payments = $query->get();
 
@@ -127,8 +128,6 @@ class PaymentController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-           
-
             // Commit the transaction if all operations succeed
             DB::commit();
 
@@ -143,7 +142,7 @@ class PaymentController extends Controller
             }
 
             $user = User::find($validated['user_id']);
-            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #".$validated['transaction_number'], "You're payment of UGX " .$validated['amount']. " for order #" .$order->order_number." has been received.");
+            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for order #" . $order->order_number . " has been received.");
 
             // Load relationships with the payment
             $payment->load('order', 'customer', 'createdBy', 'updatedBy');
