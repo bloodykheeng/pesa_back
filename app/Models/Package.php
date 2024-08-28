@@ -27,6 +27,17 @@ class Package extends Model
         'status' => 'pending',
     ];
 
+    public function payments()
+    {
+        return $this->hasMany(PackagePayment::class);
+    }
+
+    public function calculateBalanceDue()
+    {
+        $this->balance_due = $this->charged_amount - $this->amount_paid;
+        $this->save();
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
