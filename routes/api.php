@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\API\CategoryBrandController;
+use App\Http\Controllers\API\dashboard\StatisticsCardsController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
+use App\Http\Controllers\API\PackagePaymentController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\ProductCategoryController;
 use App\Http\Controllers\API\ProductController;
@@ -65,6 +67,13 @@ Route::post('/test-notification', [PushNotificationTestController::class, 'sendP
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
+
+        //======================== dashboard statistics ===========================
+        Route::get('order-statistics', [StatisticsCardsController::class, 'getOrderStatistics']);
+        Route::get('package-statistics', [StatisticsCardsController::class, 'getPackageStatistics']);
+        Route::get('customer-statistics', [StatisticsCardsController::class, 'getCustomerStatistics']);
+        Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
+
         //==================  product routes ============================
         Route::resource('product-categories', ProductCategoryController::class);
         Route::resource('category-brands', CategoryBrandController::class);
@@ -85,6 +94,7 @@ Route::group(
         Route::resource('packages', PackageController::class);
         Route::get('my-packages', [PackageController::class, 'myPackages']);
         Route::post('/cancel-package-order/{id}', [PackageController::class, 'cancelPackageOrder']);
+        Route::resource('package-payments', PackagePaymentController::class);
 
         //======================== User Management =================================
         Route::Resource('users', UserController::class);

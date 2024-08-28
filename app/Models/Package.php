@@ -21,6 +21,9 @@ class Package extends Model
         'status',
         'created_by',
         'updated_by',
+        'charged_amount',
+        'balance_due',
+        'amount_paid',
     ];
 
     protected $attributes = [
