@@ -44,9 +44,10 @@ class StatisticsCardsController extends Controller
         $totalSales = $query->sum('charged_amount');
 
         // Return the response as JSON
-        return response()->json([
+        return response()->json(["data" => [
             'total_orders' => $totalOrders,
             'total_sales' => $totalSales,
+        ],
         ]);
     }
 
@@ -83,9 +84,9 @@ class StatisticsCardsController extends Controller
         $totalSales = $query->sum('charged_amount');
 
         // Return the response as JSON
-        return response()->json([
+        return response()->json(["data" => [
             'total_packages' => $totalPackages,
-            'total_sales' => $totalSales,
+            'total_sales' => $totalSales],
         ]);
     }
 
@@ -128,10 +129,12 @@ class StatisticsCardsController extends Controller
         }
 
         // Return the response as JSON
-        return response()->json([
+        return response()->json(["data" => [
             'total_customers' => $totalCustomers,
             'total_sales' => $totalSales,
             'total_orders' => $totalOrders,
+        ],
+
         ]);
     }
 
@@ -180,9 +183,10 @@ class StatisticsCardsController extends Controller
         $totalTransactions = $orderQuery->count() + $packageQuery->count();
 
         // Return the response as JSON
-        return response()->json([
+        return response()->json(["data" => [
             'total_sales' => $totalSales,
-            'total_transactions' => $totalTransactions,
+            'total_transactions' => $totalTransactions],
+
         ]);
     }
 }
