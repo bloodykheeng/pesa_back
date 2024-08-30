@@ -21,6 +21,8 @@ class ProductController extends Controller
         $productTypeId = $request->query('product_types_id');
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
+        $categoryBrands = $request->query('categoryBrands');
+        $productTypes = $request->query('productTypes');
 
         // Apply filters if the parameters are provided
         if (isset($categoryBrandId)) {
@@ -37,6 +39,17 @@ class ProductController extends Controller
 
         if (isset($updatedBy)) {
             $query->where('updated_by', $updatedBy);
+        }
+
+        // Extract the 'id' values from the arrays of objects
+        if (isset($categoryBrands)) {
+            $categoryBrandIds = collect($categoryBrands)->pluck('id')->toArray();
+            $query->whereIn('category_brands_id', $categoryBrandIds);
+        }
+
+        if (isset($productTypes)) {
+            $productTypeIds = collect($productTypes)->pluck('id')->toArray();
+            $query->whereIn('product_types_id', $productTypeIds);
         }
 
         // Execute the query and get the results

@@ -15,6 +15,10 @@ return new class extends Migration
             $table->decimal('charged_amount', 10, 2)->default(0);
             $table->decimal('balance_due', 10, 2)->default(0);
             $table->decimal('amount_paid', 10, 2)->default(0);
+            $table->string('payment_status')->nullable();
+            $table->string('delivery_status')->nullable();
+            $table->string('package_number')->nullable();
+            $table->string('payment_mode')->nullable();
         });
     }
 
@@ -27,6 +31,10 @@ return new class extends Migration
             $table->dropColumn('charged_amount');
             $table->dropColumn('balance_due');
             $table->dropColumn('amount_paid');
+            $table->dropColumn('payment_status');
+            $table->dropColumn('delivery_status');
+            $table->dropColumn('package_number');
+            $table->dropColumn('payment_mode');
         });
     }
 };

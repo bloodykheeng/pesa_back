@@ -24,6 +24,10 @@ class Package extends Model
         'charged_amount',
         'balance_due',
         'amount_paid',
+        'payment_status',
+        'delivery_status',
+        'package_number',
+        'payment_mode',
     ];
 
     protected $attributes = [

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\CategoryBrandController;
+use App\Http\Controllers\API\dashboard\BarChartsController;
 use App\Http\Controllers\API\dashboard\StatisticsCardsController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
@@ -73,6 +74,12 @@ Route::group(
         Route::get('package-statistics', [StatisticsCardsController::class, 'getPackageStatistics']);
         Route::get('customer-statistics', [StatisticsCardsController::class, 'getCustomerStatistics']);
         Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
+
+        // Route to get product stats
+        Route::get('product-barchat-stats', [BarChartsController::class, 'getProductStats']);
+
+        // Route to get customer stats
+        Route::get('customer-barchart-stats', [BarChartsController::class, 'getCustomerStats']);
 
         //==================  product routes ============================
         Route::resource('product-categories', ProductCategoryController::class);
