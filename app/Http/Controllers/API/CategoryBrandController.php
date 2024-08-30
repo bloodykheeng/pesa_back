@@ -107,7 +107,7 @@ class CategoryBrandController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'code' => 'required|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            // 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'status' => 'nullable|string|max:255',
             'details' => 'nullable|string',
             'product_categories_id' => 'sometimes|required|exists:product_categories,id',

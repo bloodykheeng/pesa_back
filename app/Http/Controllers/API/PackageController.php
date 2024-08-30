@@ -183,7 +183,7 @@ class PackageController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'pickup' => 'required|string|max:255',
             'destination' => 'required|string|max:255',
-            'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg',
+            // 'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg',
             'status' => 'nullable|string|max:255',
             'extraInfo' => 'required|string',
             'charged_amount' => 'nullable|numeric',

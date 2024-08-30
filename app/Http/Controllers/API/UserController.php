@@ -166,7 +166,7 @@ class UserController extends Controller
             'gender' => 'nullable|string|max:255',
             'date_of_birth' => 'nullable|date',
             'lastlogin' => 'nullable|date',
-            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', // Validation for photo
+            // 'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', // Validation for photo
             'role' => 'sometimes|exists:roles,name',
         ]);
 

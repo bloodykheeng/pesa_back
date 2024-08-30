@@ -114,7 +114,7 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'status' => 'nullable|string|max:255',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            // 'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'price' => 'sometimes|required|numeric',
             'quantity' => 'sometimes|required|integer',
             'details' => 'nullable|string',
@@ -123,9 +123,9 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            if ($product->cloudinary_photo_public_id) {
+            if (isset($product->cloudinary_photo_public_id)) {
                 $this->deleteCloudinaryPhoto($product->cloudinary_photo_public_id);
-            } elseif ($product->photo_url) {
+            } elseif (isset($product->photo_url)) {
                 $this->deleteLocalPhoto($product->photo_url);
             }
 
@@ -199,7 +199,10 @@ class ProductController extends Controller
 
     private function deleteCloudinaryPhoto($publicId)
     {
-        Cloudinary::destroy($publicId);
+        // Cloudinary::destroy($publicId);
+        if (isset($publicId) && !is_null($publicId)) {
+            Cloudinary::destroy($publicId);
+        }
     }
 
     private function deleteLocalPhoto($photoUrl)

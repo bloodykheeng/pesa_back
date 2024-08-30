@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\PackagePayment;
 use App\Models\User;
+use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Services\FirebaseService;
 
 class PackagePaymentController extends Controller
 {
@@ -129,7 +129,6 @@ class PackagePaymentController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-
             // Commit the transaction if all operations succeed
             DB::commit();
 
@@ -171,6 +170,8 @@ class PackagePaymentController extends Controller
             'amount' => 'nullable|numeric',
             'details' => 'nullable|string',
             'payment_method' => 'nullable|string',
+            'details' => 'nullable|string',
+            'transaction_number' => 'required|string|unique:package_payments,transaction_number',
         ]);
 
         try {
@@ -201,6 +202,7 @@ class PackagePaymentController extends Controller
                 'amount' => $validated['amount'] ?? $payment->amount,
                 'payment_method' => $validated['payment_method'] ?? $payment->payment_method,
                 'details' => $validated['details'],
+                'transaction_number' => $validated['transaction_number'],
             ]);
 
             // Commit the transaction if all operations succeed
