@@ -41,6 +41,8 @@ Route::post('/register', [AuthController::class, 'register']);
 // Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'checkLoginStatus']);
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/app-login', [AuthController::class, 'applogin'])->name('applogin');
+
 Route::post('/third-party-login-auth', [AuthController::class, 'thirdPartyLoginAuthentication'])->name('thirdPartyLoginAuthentication');
 Route::post('/third-party-register-auth', [AuthController::class, 'thirdPartyRegisterAuthentication'])->name('thirdPartyRegisterAuthentication');
 

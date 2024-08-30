@@ -134,6 +134,62 @@ class AuthController extends Controller
             return response()->json(['message' => 'Account is not active'], 403);
         }
 
+        // Check if the user's role is neither 'admin' nor 'customer'
+        $role = $user->getRoleNames()->first();
+        if ($role !== 'Admin' && $role !== 'Customer') {
+            return response()->json(['message' => 'You are not authorized to login from here'], 403);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        $response = [
+            'message' => 'Hi ' . $user->name . ', welcome to home',
+            'id' => $user->id,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'name' => $user->name,
+            'photo_url' => $user->photo_url,
+            'lastlogin' => $user->lastlogin,
+            'email' => $user->email,
+            'nin' => $user->nin,
+            'status' => $user->status,
+            'cloudinary_photo_url' => $user->cloudinary_photo_url,
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+            'role' => $user->getRoleNames()->first() ?? "",
+            'phone' => $user->phone,
+            'date_of_birth' => $user->date_of_birth,
+            'agree' => $user->agree,
+        ];
+
+        // // Include vendor details if the user is a Vendor
+        // if ($user->hasRole('Vendor')) {
+        //     $vendor = $user->vendors()->first(); // Assuming there's a vendors() relationship
+        //     $response['vendor'] = [
+        //         'id' => $vendor->vendor_id ?? null,
+        //         'name' => $vendor->vendor->name ?? 'Unknown Vendor',
+        //     ];
+        // }
+
+        return response()->json($response);
+    }
+
+    public function applogin(Request $request)
+    {
+        $loginField = filter_var($request->input('credential'), FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+
+        // return response()->json(['message' => 'testing', ' $loginField' => $loginField], 401);
+
+        if (!Auth::attempt([$loginField => $request->input('credential'), 'password' => $request->input('password')])) {
+            return response()->json(['message' => 'Invalid Email/Phone Number Or Password'], 401);
+        }
+
+        $user = User::where($loginField, $request->input('credential'))->firstOrFail();
+
+        // Check if the user's status is active
+        if ($user->status !== 'active') {
+            return response()->json(['message' => 'Account is not active'], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $response = [
@@ -184,6 +240,12 @@ class AuthController extends Controller
                 $user = User::where('email', $request->email)->first();
                 if (empty($user)) {
                     return response()->json(['message' => 'Invalid Email'], 401);
+                }
+
+                // Check if the user's role is neither 'admin' nor 'customer'
+                $role = $user->getRoleNames()->first();
+                if ($role !== 'Admin' && $role !== 'Customer') {
+                    return response()->json(['message' => 'You are not authorized to login from here'], 403);
                 }
 
                 // If the user exists, associate the provider with this user
