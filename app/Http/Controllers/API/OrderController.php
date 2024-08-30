@@ -145,7 +145,7 @@ class OrderController extends Controller
             $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
 
             // Load products relationship with the order
-            $order->load('products');
+            $order->load('orderProducts');
 
             return response()->json(['message' => 'Order created successfully', 'data' => $order], 201);
         } catch (\Exception $e) {

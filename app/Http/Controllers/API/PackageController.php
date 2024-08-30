@@ -126,7 +126,7 @@ class PackageController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
             'status' => 'nullable|string|max:255',
             'extraInfo' => 'nullable|string',
-            'charged_amount' => 'required|numeric',
+            'charged_amount' => 'nullable|numeric',
             'amount_paid' => 'nullable|numeric',
             'payment_status' => 'nullable|string|max:255',
             'delivery_status' => 'nullable|string|max:255',
@@ -152,9 +152,10 @@ class PackageController extends Controller
             'package_number' => $packageNumber,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
-            'charged_amount' => $validated['charged_amount'],
+            'charged_amount' => $validated['charged_amount'] ?? 0,
             'amount_paid' => $validated['amount_paid'] ?? 0,
-            'balance_due' => $validated['charged_amount'] - ($validated['amount_paid'] ?? 0),
+            'balance_due' => $validated['balance_due'] ?? 0,
+            // 'balance_due' => $validated['charged_amount'] - ($validated['amount_paid'] ?? 0),
             'payment_status' => $validated['payment_status'] ?? 'pending',
             'delivery_status' => $validated['delivery_status'] ?? 'pending',
             'payment_mode' => $validated['payment_mode'] ?? 'unknown',
@@ -217,22 +218,22 @@ class PackageController extends Controller
 
         $user = User::find($package->created_by);
 
-        if ($package->status === 'processing') {
+        if ($package->status || $package->delivery_status  === 'processing') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
         }
 
-        if ($package->status === 'transit') {
+        if ($package->statu || $package->delivery_statuss === 'transit') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
         }
 
-        if ($package->status === 'delivered') {
+        if ($package->status || $package->delivery_status === 'delivered') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
         }
 
-        if ($package->status === 'cancelled') {
+        if ($package->status || $package->delivery_status === 'cancelled') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
         }
@@ -252,6 +253,8 @@ class PackageController extends Controller
 
         // Update the delivery status to 'received'
         $package->status = 'cancelled';
+        $package->delivery_status = 'cancelled';
+        $package->payment_status = 'cancelled';
 
         // Save the changes
         $package->save();
