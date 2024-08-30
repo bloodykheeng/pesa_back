@@ -25,8 +25,6 @@ class PackageController extends Controller
         $this->firebaseService = $firebaseService;
     }
 
-
-
     public function index(Request $request)
     {
         $query = Package::query();
@@ -128,15 +126,21 @@ class PackageController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
             'status' => 'nullable|string|max:255',
             'extraInfo' => 'nullable|string',
+            'charged_amount' => 'required|numeric',
+            'amount_paid' => 'nullable|numeric',
+            'payment_status' => 'nullable|string|max:255',
+            'delivery_status' => 'nullable|string|max:255',
+            'package_number' => 'nullable|string|max:255',
+            'payment_mode' => 'nullable|string|max:255',
         ]);
 
+        // Handle the photo upload
         $photoData = $this->handlePhotoUpload($request->file('photo'), 'package_photos');
 
+        // Generate a unique order number
         do {
-            $orderNumber = strtoupper(Str::random(10));
-        } while (Package::where('order_number', $orderNumber)->exists());
-
-        // $orderNumber = strtoupper(Str::uuid()->toString());
+            $packageNumber = strtoupper(Str::random(10));
+        } while (Package::where('package_number', $packageNumber)->exists());
 
         $package = Package::create(array_merge([
             'name' => $validated['name'],
@@ -144,13 +148,24 @@ class PackageController extends Controller
             'destination' => $validated['destination'],
             'status' => $validated['status'] ?? 'pending',
             'extraInfo' => $validated['extraInfo'],
-            'order_number' => $orderNumber,
+            'package_number' => $packageNumber,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
+            'charged_amount' => $validated['charged_amount'],
+            'amount_paid' => $validated['amount_paid'] ?? 0,
+            'balance_due' => $validated['charged_amount'] - ($validated['amount_paid'] ?? 0),
+            'payment_status' => $validated['payment_status'] ?? 'pending',
+            'delivery_status' => $validated['delivery_status'] ?? 'pending',
+            'payment_mode' => $validated['payment_mode'] ?? 'unknown',
         ], $photoData));
 
+        // Send notification to the user
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'New Package Order', 'Package order #' . $orderNumber . ' has been created successfully', );
+        $this->firebaseService->sendNotification(
+            $user->device_token,
+            'New Package Order',
+            'Package order #' . $packageNumber . ' has been created successfully'
+        );
 
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);
     }
@@ -166,13 +181,18 @@ class PackageController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'pickup' => 'required|string|max:255',
             'destination' => 'required|string|max:255',
-            // 'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'photo' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,gif,svg',
             'status' => 'nullable|string|max:255',
             'extraInfo' => 'required|string',
+            'charged_amount' => 'nullable|numeric',
+            'amount_paid' => 'nullable|numeric',
+            'payment_status' => 'nullable|string|max:255',
+            'delivery_status' => 'nullable|string|max:255',
+            'package_number' => 'nullable|string|max:255',
+            'payment_mode' => 'nullable|string|max:255',
         ]);
 
         if ($request->hasFile('photo')) {
-            // return response()->json(['message' => 'testing'], 404);
             // Delete existing photo
             if ($package->cloudinary_photo_public_id) {
                 $this->deleteCloudinaryPhoto($package->cloudinary_photo_public_id);
@@ -187,7 +207,10 @@ class PackageController extends Controller
 
         $validated['updated_by'] = Auth::id();
 
-        // return response()->json(['message' => 'testing', ' $validated' => $validated], 404);
+        // Update balance due if charged amount or amount paid has changed
+        if (isset($validated['charged_amount']) || isset($validated['amount_paid'])) {
+            $validated['balance_due'] = ($validated['charged_amount'] ?? $package->charged_amount) - ($validated['amount_paid'] ?? $package->amount_paid);
+        }
 
         $package->update($validated);
 

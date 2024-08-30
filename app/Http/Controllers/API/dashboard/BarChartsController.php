@@ -11,6 +11,66 @@ class BarChartsController extends Controller
 {
     //
 
+    public function filterOrdersData(Request $request, $ordersQuery)
+    {
+
+        // $ordersData = collect($ordersData);
+        // Filter by status
+        // if ($request->has('statuses') && is_array($request->input('statuses'))) {
+        //     $statuses = collect($request->input('statuses'))->pluck('value');
+        //     $ordersQuery->whereIn('status', $statuses);
+        // }
+
+        if ($request->has('deliveryStatuses') && is_array($request->input('deliveryStatuses'))) {
+            $deliveryStatuses = collect($request->input('deliveryStatuses'))->pluck('value');
+            $ordersQuery->whereIn('delivery_status', $deliveryStatuses);
+        }
+        if ($request->has('paymentStatuses') && is_array($request->input('paymentStatuses'))) {
+            $paymentStatuses = collect($request->input('paymentStatuses'))->pluck('value');
+            $ordersQuery->whereIn('payment_status', $paymentStatuses);
+        }
+
+        // Filter by product categories
+        if ($request->has('productCategories') && is_array($request->input('productCategories'))) {
+            $categoryIds = collect($request->input('productCategories'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.categoryBrand.productCategory', function ($q) use ($categoryIds) {
+                $q->whereIn('id', $categoryIds);
+            });
+        }
+
+        // Filter by product category brands
+        if ($request->has('productCategoryBrands') && is_array($request->input('productCategoryBrands'))) {
+            $brandIds = collect($request->input('productCategoryBrands'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.categoryBrand', function ($q) use ($brandIds) {
+                $q->whereIn('id', $brandIds);
+            });
+        }
+
+        // Filter by products
+        if ($request->has('products') && is_array($request->input('products'))) {
+            $productIds = collect($request->input('products'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product', function ($q) use ($productIds) {
+                $q->whereIn('id', $productIds);
+            });
+        }
+
+        // Filter by product types
+        if ($request->has('productTypes') && is_array($request->input('productTypes'))) {
+            $productTypeIds = collect($request->input('productTypes'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.productType', function ($q) use ($productTypeIds) {
+                $q->whereIn('id', $productTypeIds);
+            });
+        }
+
+        // Filter by created by
+        if ($request->has('createdBy')) {
+            $createdBy = $request->input('createdBy');
+            $ordersQuery->where('created_by', $createdBy);
+        }
+
+        return $ordersQuery;
+    }
+
     public function getProductStats(Request $request)
     {
         $status = $request->input('status');
@@ -24,23 +84,7 @@ class BarChartsController extends Controller
 
         // Build the query with optional filters
         // Build the query with optional filters
-        $query = Order::with(['products.product'])->whereHas('products.product', function ($productQuery) use ($request) {
-            // Filter by product status if provided
-            if ($request->input('product_status')) {
-                $productQuery->where('status', $request->input('product_status'));
-            }
-
-            // Filter by product category if provided (assuming you have a category relationship or column)
-            if ($request->input('category_id')) {
-                $productQuery->where('category_brands_id', $request->input('category_id'));
-            }
-
-            // Add any additional filters for the product here
-        });
-
-        if ($status) {
-            $query->where('status', $status);
-        }
+        $query = Order::with(['products.product']);
 
         if ($startDate) {
             $query->whereDate('created_at', '>=', Carbon::parse($startDate));
@@ -50,9 +94,7 @@ class BarChartsController extends Controller
             $query->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
 
-        if ($createdBy) {
-            $query->where('created_by', $createdBy);
-        }
+        $query = $this->filterOrdersData($request, $query);
 
         // Fetch the data
         $orders = $query->get();
@@ -121,9 +163,7 @@ class BarChartsController extends Controller
             $query->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
 
-        if ($createdBy) {
-            $query->where('created_by', $createdBy);
-        }
+        $query = $this->filterOrdersData($request, $query);
 
         // Fetch the data and aggregate it manually
         $orders = $query->get();
