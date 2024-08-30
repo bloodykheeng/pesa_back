@@ -142,6 +142,7 @@ class PackageController extends Controller
             'name' => $validated['name'],
             'pickup' => $validated['pickup'],
             'destination' => $validated['destination'],
+            'photo_url' => $photoData['photo_url'] ?? null,
             'status' => $validated['status'] ?? 'pending',
             'extraInfo' => $validated['extraInfo'],
             'order_number' => $orderNumber,

@@ -304,16 +304,20 @@ class UserController extends Controller
         if ($request->hasFile('photo')) {
             // return response()->json(['message' => 'testing'], 404);
             // Delete existing photo
-            if ($user->cloudinary_photo_public_id) {
-                $this->deleteCloudinaryPhoto($user->cloudinary_photo_public_id);
-            } elseif ($user->photo_url) {
+            // if ($user->cloudinary_photo_public_id) {
+            //     $this->deleteCloudinaryPhoto($user->cloudinary_photo_public_id);
+            // } elseif ($user->photo_url) {
+            //     $this->deleteLocalPhoto($user->photo_url);
+            // }
+
+            if ($user->photo_url) {
                 $this->deleteLocalPhoto($user->photo_url);
             }
 
             // Upload new photo
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'user_photos');
-            $validated = array_merge($validated, $photoData);
-
+            // $validated = array_merge($validated, $photoData);
+            $validated['photo_url'] = $photoData['photo_url'];
             $validated['updated_by'] = Auth::id();
             $user->update($validated);
 
