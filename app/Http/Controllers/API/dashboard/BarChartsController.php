@@ -84,7 +84,8 @@ class BarChartsController extends Controller
 
         // Build the query with optional filters
         // Build the query with optional filters
-        $query = Order::with(['products.product']);
+        $query = Order::with(['orderProducts.product']);
+        // $query = Order::query();
 
         if ($startDate) {
             $query->whereDate('created_at', '>=', Carbon::parse($startDate));
@@ -101,7 +102,7 @@ class BarChartsController extends Controller
 
         // Aggregate the data
         $productStats = $orders->flatMap(function ($order) {
-            return $order->products->map(function ($orderProduct) {
+            return $order->orderProducts->map(function ($orderProduct) {
                 return [
                     'product_id' => $orderProduct->product_id,
                     'product_name' => $orderProduct->product->name,
@@ -172,7 +173,7 @@ class BarChartsController extends Controller
             $user = $orders->first()->createdBy;
             return [
                 'name' => $user->name,
-                'sales' => $orders->sum('amount_paid'),
+                'sales' => $orders->sum('charged_amount'),
                 'quantity' => $orders->count(),
             ];
         })->values();
