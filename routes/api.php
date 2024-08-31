@@ -102,6 +102,7 @@ Route::group(
         // ===================Packages routes=========================================
         Route::resource('packages', PackageController::class);
         Route::get('my-packages', [PackageController::class, 'myPackages']);
+        Route::post('/confirm-package-receipt/{id}', [PackageController::class, 'confirmPackageReceipt']);
         Route::post('/cancel-package-order/{id}', [PackageController::class, 'cancelPackageOrder']);
         Route::resource('package-payments', PackagePaymentController::class);
 
@@ -137,6 +138,7 @@ Route::group(
         Route::post('/orders/{orderId}/record-payment', [PaymentController::class, 'recordPayment']);
         // for customer
         Route::get('my-payments', [PaymentController::class, 'get_payments']);
+        Route::get('my-package-payments', [PackagePaymentController::class, 'get_package_payments']);
 
         //=============== Referals ========================
         Route::apiResource('referals', ReferalController::class);

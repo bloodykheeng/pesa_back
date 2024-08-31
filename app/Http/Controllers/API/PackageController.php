@@ -218,22 +218,22 @@ class PackageController extends Controller
 
         $user = User::find($package->created_by);
 
-        if ($package->status || $package->delivery_status  === 'processing') {
+        if ($package->status === 'processing' || $package->delivery_status  === 'processing') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
         }
 
-        if ($package->statu || $package->delivery_statuss === 'transit') {
+        if ($package->status === 'transit' || $package->delivery_status === 'transit') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
         }
 
-        if ($package->status || $package->delivery_status === 'delivered') {
+        if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
         }
 
-        if ($package->status || $package->delivery_status === 'cancelled') {
+        if ($package->status === 'cancelled'  || $package->delivery_status === 'cancelled') {
 
             $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
         }
@@ -264,6 +264,30 @@ class PackageController extends Controller
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to cancelled'], 200);
+    }
+
+    public function confirmPackageReceipt(Request $request, $id)
+    {
+        // Find the order by ID
+        $package = Package::find($id);
+
+        // Check if the order exists
+        if (!$package) {
+            return response()->json(['message' => 'Package not found'], 404);
+        }
+
+        // Update the delivery status to 'received'
+        $package->delivery_status = 'received';
+        $package->status = 'delivered';
+
+        // Save the changes
+        $package->save();
+
+        $user = User::find($package->created_by);
+        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+
+        // Return a success response
+        return response()->json(['message' => 'Package status updated to received'], 200);
     }
 
     public function destroy($id)

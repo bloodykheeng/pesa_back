@@ -253,6 +253,7 @@ class OrderController extends Controller
 
         // Update the delivery status to 'received'
         $order->delivery_status = 'received';
+        $order->status = 'delivered';
 
         // Save the changes
         $order->save();
