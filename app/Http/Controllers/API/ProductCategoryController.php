@@ -44,6 +44,9 @@ class ProductCategoryController extends Controller
             $query->where('updated_by', $updatedBy);
         }
 
+        // Add more filters as needed
+        $query->latest();
+
         // Execute the query and get the results
         $categories = $query->get();
 
@@ -101,6 +104,7 @@ class ProductCategoryController extends Controller
 
         if ($request->hasFile('photo')) {
             // return response()->json(['message' => 'testing'], 404);
+
             // Delete existing photo
             if ($category->cloudinary_photo_public_id) {
                 $this->deleteCloudinaryPhoto($category->cloudinary_photo_public_id);
@@ -176,7 +180,9 @@ class ProductCategoryController extends Controller
 
     private function deleteCloudinaryPhoto($publicId)
     {
-        Cloudinary::destroy($publicId);
+        if (isset($publicId) && !is_null($publicId)) {
+            Cloudinary::destroy($publicId);
+        }
     }
 
     private function deleteLocalPhoto($photoUrl)

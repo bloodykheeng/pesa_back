@@ -62,7 +62,8 @@ class PackagePaymentController extends Controller
         if ($request->has('amount_max')) {
             $query->where('amount', '<=', $request->input('amount_max'));
         }
-
+        // Add more filters as needed
+        $query->latest();
         // Fetch the filtered results
         $payments = $query->get();
 

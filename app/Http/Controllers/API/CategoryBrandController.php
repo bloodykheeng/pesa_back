@@ -49,6 +49,8 @@ class CategoryBrandController extends Controller
             $query->where('product_categories_id', $productCategoryId);
         }
 
+        // Add more filters as needed
+        $query->latest();
         // Execute the query and get the results
         $brands = $query->get();
 
@@ -190,7 +192,9 @@ class CategoryBrandController extends Controller
 
     private function deleteCloudinaryPhoto($publicId)
     {
-        Cloudinary::destroy($publicId);
+        if (isset($publicId) && !is_null($publicId)) {
+            Cloudinary::destroy($publicId);
+        }
     }
 
     private function deleteLocalPhoto($photoUrl)

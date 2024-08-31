@@ -44,6 +44,9 @@ class ProductTypeController extends Controller
             $query->where('updated_by', $updatedBy);
         }
 
+        // Add more filters as needed
+        $query->latest();
+
         // Execute the query and get the results
         $categories = $query->get();
 
@@ -70,7 +73,7 @@ class ProductTypeController extends Controller
             'details' => 'nullable|string',
         ]);
 
-        $photoData=[];
+        $photoData = [];
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'type_photos');
         }
@@ -179,7 +182,9 @@ class ProductTypeController extends Controller
 
     private function deleteCloudinaryPhoto($publicId)
     {
-        Cloudinary::destroy($publicId);
+        if (isset($publicId) && !is_null($publicId)) {
+            Cloudinary::destroy($publicId);
+        }
     }
 
     private function deleteLocalPhoto($photoUrl)

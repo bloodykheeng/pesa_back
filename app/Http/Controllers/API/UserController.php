@@ -54,6 +54,7 @@ class UserController extends Controller
         //     }
         // }
 
+        // Add more filters as needed
         $query->latest();
         // // Pagination
         // $perPage = $request->query('per_page', 10); // Default to 10 per page
@@ -111,6 +112,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'nin' => 'nullable|string|max:255|unique:users',
             'status' => 'required|string|max:255',
             'date_of_birth' => 'nullable|date',
             'gender' => 'nullable|string|max:255',
@@ -133,6 +135,7 @@ class UserController extends Controller
                 'name' => $validatedData['name'],
                 'phone' => $validatedData['phone'] ?? null,
                 'email' => $validatedData['email'],
+                'nin' => $validatedData['nin'] ?? null,
                 'date_of_birth' => $validatedData['date_of_birth'] ?? null,
                 'gender' => $validatedData['gender'] ?? null,
                 'status' => $validatedData['status'],
@@ -161,6 +164,7 @@ class UserController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'nin' => 'nullable|string|max:255|unique:users,nin,' . $id,
             'phone' => 'nullable|string|max:255',
             'status' => 'required|string|max:255',
             'gender' => 'nullable|string|max:255',
@@ -195,6 +199,7 @@ class UserController extends Controller
                 'name' => $validatedData['name'],
                 'phone' => $validatedData['phone'] ?? null,
                 'email' => $validatedData['email'],
+                'nin' => $validatedData['nin'] ?? null,
                 'date_of_birth' => $validatedData['date_of_birth'] ?? null,
                 'gender' => $validatedData['gender'] ?? null,
                 'status' => $validatedData['status'],
@@ -277,7 +282,9 @@ class UserController extends Controller
 
     private function deleteCloudinaryPhoto($publicId)
     {
-        Cloudinary::destroy($publicId);
+        if (isset($publicId) && !is_null($publicId)) {
+            Cloudinary::destroy($publicId);
+        }
     }
 
     private function deleteLocalPhoto($photoUrl)

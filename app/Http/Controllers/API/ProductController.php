@@ -51,7 +51,8 @@ class ProductController extends Controller
             $productTypeIds = collect($productTypes)->pluck('id')->toArray();
             $query->whereIn('product_types_id', $productTypeIds);
         }
-
+        // Add more filters as needed
+        $query->latest();
         // Execute the query and get the results
         $products = $query->get();
 
