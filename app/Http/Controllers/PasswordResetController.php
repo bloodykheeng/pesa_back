@@ -17,35 +17,40 @@ class PasswordResetController extends Controller
 {
     public function forgetPassword(Request $request)
     {
+
         try {
-            $user = User::where('email', $request->email)->get();
-            if (count($user) > 0) {
+            $user = User::where('email', $request->email)->first();
+            // return response()->json(['success' => false, 'message' => 'testing', '$request->email' => $user->email], 404);
+            if ($user) {
                 $token = Str::random(40);
                 $domain = URL::to('/');
                 $url = $domain . '/api/reset-password?token=' . $token;
 
                 $data['url'] = $url;
-                $data['email'] = $request->email;
+                $data['email'] = $user->email;
                 $data['title'] = 'Password Reset';
-                $data['body'] = "Please click on link below to reset your password";
+                $data['body'] = "Please click on the link below to reset your password";
 
+                // Send the password reset email
                 Mail::send('forgotPasswordMail', ['data' => $data], function ($message) use ($data) {
                     $message->to($data['email'])->subject($data['title']);
                 });
 
                 $datetime = Carbon::now()->format('Y-m-d H:i:s');
 
-                PasswordReset::updateOrCreate(['email' => $request->email], [
-                    'email' => $request->email,
-                    'token' => $token, 'created' => $datetime,
+                // Update or create the password reset record
+                PasswordReset::updateOrCreate(['email' => $user->email], [
+                    'email' => $user->email,
+                    'token' => $token,
+                    'created_at' => $datetime, // Corrected field name to 'created_at'
                 ]);
 
-                return response()->json(['success' => true, 'message' => 'Please check your mail to reset your password']);
+                return response()->json(['success' => true, 'message' => 'Please check your email to reset your password'], 200);
             } else {
-                return response()->json(['success' => false, 'message' => 'User Not Found']);
+                return response()->json(['success' => false, 'message' => 'User not found'], 404);
             }
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
 

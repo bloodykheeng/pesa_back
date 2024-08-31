@@ -122,7 +122,7 @@ class UserController extends Controller
             'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', // Expect a file for the photo
         ]);
 
-        $photoData = null;
+        $photoData = [];
         if ($request->hasFile('photo')) {
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'user_photos'); // Save the photo in a specific folder
         }
