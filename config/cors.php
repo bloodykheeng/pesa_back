@@ -21,7 +21,7 @@ return [
     'allowed_methods' => ['POST', 'GET', 'DELETE', 'PUT', '*'],
 
     // 'allowed_origins' => ['*'],
-    'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'https://aws-0-eu-central-1.pooler.supabase.com/', 'http://localhost:3000/', '*'],
+    'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'https://darkred-pony-968406.hostingersite.com', 'https://aws-0-eu-central-1.pooler.supabase.com/', 'http://localhost:3000/', '*'],
 
     'allowed_origins_patterns' => ['*'],
 
