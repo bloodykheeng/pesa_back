@@ -10,6 +10,7 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
@@ -169,6 +170,11 @@ class PaymentController extends Controller
             'amount' => 'nullable|numeric',
             'details' => 'nullable|string',
             'payment_method' => 'nullable|string',
+            'transaction_number' => [
+                'required',
+                'string',
+                Rule::unique('payments')->ignore($payment->id),
+            ],
         ]);
 
         try {
@@ -198,6 +204,7 @@ class PaymentController extends Controller
             $payment->update([
                 'amount' => $validated['amount'] ?? $payment->amount,
                 'payment_method' => $validated['payment_method'] ?? $payment->payment_method,
+                'transaction_number' => $validated['transaction_number'],
                 'details' => $validated['details'],
             ]);
 

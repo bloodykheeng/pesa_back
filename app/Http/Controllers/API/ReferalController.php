@@ -97,8 +97,19 @@ class ReferalController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        // if (!Auth::user()->can('delete user')) {
+        //     return response()->json(['message' => 'Unauthorized'], 403);
+        // }
+
+        $referal = Referal::find($id);
+        if (!$referal) {
+            return response()->json(['message' => 'referal not found'], 404);
+        }
+
+        $referal->delete();
+
+        return response()->json(['message' => 'Referal deleted successfully']);
     }
 }

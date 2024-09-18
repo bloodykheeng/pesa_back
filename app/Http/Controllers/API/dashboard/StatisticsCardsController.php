@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API\dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Package;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -170,60 +169,61 @@ class StatisticsCardsController extends Controller
         $deliveryStatuses = $request->input('deliveryStatuses');
         $paymentStatuses = $request->input('paymentStatuses');
 
-        // Filter users by role and date range using Spatie
-        $query = User::role(['Admin', 'Customer']);
+        // Initialize query for filtering orders
+        $ordersQuery = Order::query();
 
+        // Initialize query for filtering packages
+        $packagesQuery = Package::query();
+
+        // Apply date filters for orders and packages
         if (isset($startDate)) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $ordersQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $packagesQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
         }
 
         if (isset($endDate)) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $ordersQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $packagesQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
 
-        // Get the filtered customers
-        $customers = $query->get();
-        $totalCustomers = $customers->count();
-
-        // Calculate sales made and orders made
-        $totalSales = 0;
-        $totalOrders = 0;
-
-        foreach ($customers as $customer) {
-            $ordersQuery = Order::where('status', 'delivered')
-                ->where('created_by', $customer->id);
-
-            $packagesQuery = Package::where('status', 'delivered')
-                ->where('created_by', $customer->id);
-
-            // Apply delivery status filter
-            if (isset($deliveryStatuses) && is_array($deliveryStatuses)) {
-                $deliveryStatuses = collect($deliveryStatuses)->pluck('value');
-                $ordersQuery->whereIn('delivery_status', $deliveryStatuses);
-                $packagesQuery->whereIn('delivery_status', $deliveryStatuses);
-            }
-
-            // Apply payment status filter
-            if (isset($paymentStatuses) && is_array($paymentStatuses)) {
-                $paymentStatuses = collect($paymentStatuses)->pluck('value');
-                $ordersQuery->whereIn('payment_status', $paymentStatuses);
-                $packagesQuery->whereIn('payment_status', $paymentStatuses);
-            }
-
-            // Execute the queries and sum the results
-            $orders = $ordersQuery->get();
-            $packages = $packagesQuery->get();
-
-            $totalSales += $orders->sum('charged_amount') + $packages->sum('charged_amount');
-            $totalOrders += $orders->count() + $packages->count();
+        // Apply delivery status filter
+        if (isset($deliveryStatuses) && is_array($deliveryStatuses)) {
+            $deliveryStatuses = collect($deliveryStatuses)->pluck('value');
+            $ordersQuery->whereIn('delivery_status', $deliveryStatuses);
+            $packagesQuery->whereIn('delivery_status', $deliveryStatuses);
         }
+
+        // Apply payment status filter
+        if (isset($paymentStatuses) && is_array($paymentStatuses)) {
+            $paymentStatuses = collect($paymentStatuses)->pluck('value');
+            $ordersQuery->whereIn('payment_status', $paymentStatuses);
+            $packagesQuery->whereIn('payment_status', $paymentStatuses);
+        }
+
+        // Get the filtered orders and packages
+        $orders = $ordersQuery->get();
+        $packages = $packagesQuery->get();
+
+        // Group orders and packages by customer and count unique customers
+        $customersFromOrders = $orders->groupBy('created_by');
+        $customersFromPackages = $packages->groupBy('created_by');
+
+        // Merge the customer groups from orders and packages
+        $allCustomerIds = $customersFromOrders->keys()->merge($customersFromPackages->keys())->unique();
+        $totalCustomers = $allCustomerIds->count();
+
+        // Calculate total sales and total orders/packages
+        $totalSales = $orders->sum('charged_amount') + $packages->sum('charged_amount');
+        $totalOrders = $orders->count() + $packages->count();
 
         // Return the response as JSON
-        return response()->json(["data" => [
-            'total_customers' => $totalCustomers,
-            'total_sales' => $totalSales,
-            'total_orders' => $totalOrders,
-        ]]);
+        return response()->json([
+            'data' => [
+                'total_customers' => $totalCustomers,
+                'total_sales' => $totalSales,
+                'total_orders' => $totalOrders,
+            ],
+        ]);
     }
 
     public function getTransactionStatistics(Request $request)
@@ -290,8 +290,11 @@ class StatisticsCardsController extends Controller
         }
 
         // Calculate statistics
-        $totalOrderSales = $orderQuery->sum('charged_amount') - $orderQuery->sum('balance_due');
-        $totalPackageSales = $packageQuery->sum('charged_amount') - $packageQuery->sum('balance_due');
+        // $totalOrderSales = $orderQuery->sum('charged_amount') - $orderQuery->sum('balance_due');
+        // $totalPackageSales = $packageQuery->sum('charged_amount') - $packageQuery->sum('balance_due');
+
+        $totalOrderSales = $orderQuery->sum('charged_amount');
+        $totalPackageSales = $packageQuery->sum('charged_amount');
 
         $totalSales = $totalOrderSales + $totalPackageSales;
         $totalTransactions = $orderQuery->count() + $packageQuery->count();

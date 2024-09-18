@@ -10,6 +10,7 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PackagePaymentController extends Controller
 {
@@ -172,7 +173,11 @@ class PackagePaymentController extends Controller
             'details' => 'nullable|string',
             'payment_method' => 'nullable|string',
             'details' => 'nullable|string',
-            'transaction_number' => 'required|string|unique:package_payments,transaction_number',
+            'transaction_number' => [
+                'required',
+                'string',
+                Rule::unique('package_payments')->ignore($payment->id),
+            ],
         ]);
 
         try {

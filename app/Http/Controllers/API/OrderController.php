@@ -27,6 +27,7 @@ class OrderController extends Controller
     {
         $query = Order::query();
 
+        // return DB::connection()->getDatabaseName();
         // Eager load relationships
         $query->with('orderProducts.product', 'createdBy', 'updatedBy');
 
@@ -216,7 +217,7 @@ class OrderController extends Controller
             }
 
             // Load products relationship with the transaction
-            $order->load('products');
+            $order->load('orderProducts');
 
             return response()->json(['message' => 'Order updated successfully', 'data' => $order]);
         } catch (\Exception $e) {
@@ -235,7 +236,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Order not found'], 404);
         }
 
-        $order->products()->delete();
+        $order->orderProducts()->delete();
         $order->delete();
 
         return response()->json(null, 204);

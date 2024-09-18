@@ -66,6 +66,8 @@ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::cla
 
 Route::post('/test-notification', [PushNotificationTestController::class, 'sendPushNotification']);
 
+Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
+
 //=============================== private routes ==================================
 Route::group(
     ['middleware' => ['auth:sanctum']],
@@ -75,7 +77,7 @@ Route::group(
         Route::get('order-statistics', [StatisticsCardsController::class, 'getOrderStatistics']);
         Route::get('package-statistics', [StatisticsCardsController::class, 'getPackageStatistics']);
         Route::get('customer-statistics', [StatisticsCardsController::class, 'getCustomerStatistics']);
-        Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
+        // Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
 
         // Route to get product stats
         Route::get('product-barchat-stats', [BarChartsController::class, 'getProductStats']);
@@ -122,7 +124,7 @@ Route::group(
         Route::apiResource('orders', OrderController::class)->except(['store']);
 
         //=============== orders transactions ========================
-        Route::apiResource('orders', OrderController::class);
+        // Route::apiResource('orders', OrderController::class);
         Route::get('my-orders', [OrderController::class, 'get_orders']);
         Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
         Route::post('/cancel-order/{id}', [OrderController::class, 'cancelOrder']);
