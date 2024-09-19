@@ -121,10 +121,10 @@ Route::group(
         Route::post('/save-token', [UserController::class, 'SaveToken']);
 
         //=============== orders transactions ========================
-        Route::apiResource('orders', OrderController::class)->except(['store']);
+        // Route::apiResource('orders', OrderController::class)->except(['store']);
 
         //=============== orders transactions ========================
-        // Route::apiResource('orders', OrderController::class);
+        Route::apiResource('orders', OrderController::class);
         Route::get('my-orders', [OrderController::class, 'get_orders']);
         Route::post('/confirm-receipt/{id}', [OrderController::class, 'confirmReceipt']);
         Route::post('/cancel-order/{id}', [OrderController::class, 'cancelOrder']);
