@@ -143,7 +143,9 @@ class OrderController extends Controller
             // Commit the transaction if all operations succeed
             DB::commit();
 
-            $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+            if (isset($user->device_token)) {
+                $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+            }
 
             // Load products relationship with the order
             $order->load('orderProducts');
@@ -199,21 +201,25 @@ class OrderController extends Controller
 
             $user = User::find($order->created_by);
 
-            $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
+            if (isset($user->device_token)) {
 
-            if ($order->payment_status === 'paid') {
+                $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
-            }
+                if ($order->payment_status === 'paid') {
 
-            if ($order->delivery_status === 'delivered') {
+                    $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
+                }
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
-            }
+                if ($order->delivery_status === 'delivered') {
 
-            if ($order->delivery_status === 'cancelled') {
+                    $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
+                }
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
+                if ($order->delivery_status === 'cancelled') {
+
+                    $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
+                }
+
             }
 
             // Load products relationship with the transaction
@@ -260,7 +266,10 @@ class OrderController extends Controller
         $order->save();
 
         $user = User::find($order->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
+
+        }
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to received'], 200);
@@ -285,7 +294,9 @@ class OrderController extends Controller
         $order->save();
 
         $user = User::find($order->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
+        }
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to cancelled'], 200);

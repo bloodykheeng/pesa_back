@@ -163,11 +163,13 @@ class PackageController extends Controller
 
         // Send notification to the user
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification(
-            $user->device_token,
-            'New Package Order',
-            'Package order #' . $packageNumber . ' has been created successfully'
-        );
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification(
+                $user->device_token,
+                'New Package Order',
+                'Package order #' . $packageNumber . ' has been created successfully'
+            );
+        }
 
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);
     }
@@ -218,24 +220,26 @@ class PackageController extends Controller
 
         $user = User::find($package->created_by);
 
-        if ($package->status === 'processing' || $package->delivery_status  === 'processing') {
+        if (isset($user->device_token)) {
+            if ($package->status === 'processing' || $package->delivery_status === 'processing') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
-        }
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
+            }
 
-        if ($package->status === 'transit' || $package->delivery_status === 'transit') {
+            if ($package->status === 'transit' || $package->delivery_status === 'transit') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
-        }
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
+            }
 
-        if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
+            if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
-        }
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
+            }
 
-        if ($package->status === 'cancelled'  || $package->delivery_status === 'cancelled') {
+            if ($package->status === 'cancelled' || $package->delivery_status === 'cancelled') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
+            }
         }
 
         return response()->json(['message' => 'Package updated successfully', 'data' => $package]);
@@ -260,7 +264,10 @@ class PackageController extends Controller
         $package->save();
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
+
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
+        }
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to cancelled'], 200);
@@ -284,7 +291,10 @@ class PackageController extends Controller
         $package->save();
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+        }
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to received'], 200);

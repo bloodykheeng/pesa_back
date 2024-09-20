@@ -145,7 +145,9 @@ class PackagePaymentController extends Controller
             }
 
             $user = User::find($validated['user_id']);
-            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
+            if (isset($user->device_token)) {
+                $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
+            }
 
             // Load relationships with the payment
             $payment->load('package', 'customer', 'createdBy', 'updatedBy');
