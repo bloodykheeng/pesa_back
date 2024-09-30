@@ -5,7 +5,9 @@ use App\Http\Controllers\API\dashboard\BarChartsController;
 use App\Http\Controllers\API\dashboard\StatisticsCardsController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
+use App\Http\Controllers\API\FaqController;
 use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PackagePaymentController;
@@ -19,6 +21,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,6 +67,9 @@ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::cla
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
+//========== email testing ====
+Route::post('test-email', [EmailTestController::class, 'testEmail']);
+
 Route::post('/test-notification', [PushNotificationTestController::class, 'sendPushNotification']);
 
 Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
@@ -72,6 +78,13 @@ Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTran
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
+
+        //================ notifications =======================
+        Route::post('send-notification', [NotificationController::class, 'sendNotification']);
+
+        //====================== faqs =========================
+        Route::Resource('faqs', FaqController::class);
+        Route::get('get-faqs', [FaqController::class, 'get_faqs']);
 
         //======================== dashboard statistics ===========================
         Route::get('order-statistics', [StatisticsCardsController::class, 'getOrderStatistics']);

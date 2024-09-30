@@ -10,6 +10,7 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PackageController extends Controller
@@ -169,6 +170,16 @@ class PackageController extends Controller
                 'New Package Order',
                 'Package order #' . $packageNumber . ' has been created successfully'
             );
+        }
+
+        // Send notifications to all Admin users
+        $admins = User::role('Admin')->get();
+        foreach ($admins as $admin) {
+            if ($admin->email) {
+                Mail::send('emails.newPackageOrderAdmin', ['package' => $package], function ($message) use ($admin) {
+                    $message->to($admin->email)->subject('New Package Order Submitted');
+                });
+            }
         }
 
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);

@@ -11,6 +11,7 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -145,6 +146,16 @@ class OrderController extends Controller
 
             if (isset($user->device_token)) {
                 $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+            }
+
+            // Send notifications to all Admin users
+            $admins = User::role('Admin')->get();
+            foreach ($admins as $admin) {
+                if ($admin->email) {
+                    Mail::send('emails.newOrderAdmin', ['order' => $order], function ($message) use ($admin) {
+                        $message->to($admin->email)->subject('New Order Submitted');
+                    });
+                }
             }
 
             // Load products relationship with the order
