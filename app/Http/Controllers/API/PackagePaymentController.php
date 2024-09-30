@@ -10,6 +10,7 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class PackagePaymentController extends Controller
@@ -145,8 +146,16 @@ class PackagePaymentController extends Controller
             }
 
             $user = User::find($validated['user_id']);
-            if (isset($user->device_token)) {
-                $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
+            try {
+                if (isset($user->device_token)) {
+                    $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
+                }
+            } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+                // Log the error for debugging purposes
+                Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+                // Optionally, notify the user about the issue via email or other means
+                // ...
             }
 
             // Load relationships with the payment

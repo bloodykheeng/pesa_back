@@ -32,7 +32,7 @@
 <body>
     <div class="container">
         <h1>New Notification</h1>
-        <p>{{ $message }}</p>
+        <p>{{ $notificationMessage }}</p>
         <p>Thank you for staying with us!</p>
         <div class="footer">
             <p>&copy; {{ date('Y') }} Elevate Pesa. All rights reserved.</p>
