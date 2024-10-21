@@ -10,6 +10,8 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class PaymentController extends Controller
 {
@@ -142,7 +144,20 @@ class PaymentController extends Controller
             }
 
             $user = User::find($validated['user_id']);
-            $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for order #" . $order->order_number . " has been received.");
+            try {
+
+                if (isset($user->device_token)) {
+                    $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for order #" . $order->order_number . " has been received.");
+
+                }
+
+            } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+                // Log the error for debugging purposes
+                Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+                // Optionally, notify the user about the issue via email or other means
+                // ...
+            }
 
             // Load relationships with the payment
             $payment->load('order', 'customer', 'createdBy', 'updatedBy');
@@ -169,6 +184,11 @@ class PaymentController extends Controller
             'amount' => 'nullable|numeric',
             'details' => 'nullable|string',
             'payment_method' => 'nullable|string',
+            'transaction_number' => [
+                'required',
+                'string',
+                Rule::unique('payments')->ignore($payment->id),
+            ],
         ]);
 
         try {
@@ -198,6 +218,7 @@ class PaymentController extends Controller
             $payment->update([
                 'amount' => $validated['amount'] ?? $payment->amount,
                 'payment_method' => $validated['payment_method'] ?? $payment->payment_method,
+                'transaction_number' => $validated['transaction_number'],
                 'details' => $validated['details'],
             ]);
 

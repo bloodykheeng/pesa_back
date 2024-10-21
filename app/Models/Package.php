@@ -34,6 +34,12 @@ class Package extends Model
         'status' => 'pending',
     ];
 
+    // // Helps to get the delivery status is small letters always
+    // public function getDeliveryStatusAttribute($value)
+    // {
+    //     return strtolower($value);
+    // }
+
     public function payments()
     {
         return $this->hasMany(PackagePayment::class);

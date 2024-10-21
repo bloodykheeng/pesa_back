@@ -11,6 +11,8 @@ use App\Services\FirebaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -27,6 +29,7 @@ class OrderController extends Controller
     {
         $query = Order::query();
 
+        // return DB::connection()->getDatabaseName();
         // Eager load relationships
         $query->with('orderProducts.product', 'createdBy', 'updatedBy');
 
@@ -142,7 +145,28 @@ class OrderController extends Controller
             // Commit the transaction if all operations succeed
             DB::commit();
 
-            $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+            if (isset($user->device_token)) {
+                try {
+
+                    $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+                } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+                    // Log the error or update the user that their device token is invalid
+                    // Log::error('Device token not found for user: ' . $user->id . ' - ' . $e->getMessage());
+
+                    // Optionally, you can notify the user to update their app or token
+                    // continue; // Skip to the next user
+                }
+            }
+
+            // Send notifications to all Admin users
+            $admins = User::role('Admin')->get();
+            foreach ($admins as $admin) {
+                if ($admin->email) {
+                    Mail::send('emails.newOrderAdmin', ['order' => $order], function ($message) use ($admin) {
+                        $message->to($admin->email)->subject('New Order Submitted');
+                    });
+                }
+            }
 
             // Load products relationship with the order
             $order->load('orderProducts');
@@ -197,26 +221,42 @@ class OrderController extends Controller
             DB::commit();
 
             $user = User::find($order->created_by);
+            try {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
+                if (isset($user->device_token)) {
 
-            if ($order->payment_status === 'paid') {
+                    $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
-            }
+                    if ($order->payment_status === 'paid') {
 
-            if ($order->delivery_status === 'delivered') {
+                        $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
+                    }
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
-            }
+                    if ($order->delivery_status === 'delivered') {
 
-            if ($order->delivery_status === 'cancelled') {
+                        $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
+                    }
 
-                $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
+                    if ($order->delivery_status === 'cancelled') {
+
+                        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
+                    }
+
+                }
+
+            } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+                // Log the error for debugging purposes
+                Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+                // Optionally, notify the user about the issue via email or other means
+                // ...
+            } catch (\Exception $e) {
+                // Handle other potential exceptions
+                Log::error('An error occurred while sending notifications to user ID: ' . $user->id . ' - ' . $e->getMessage());
             }
 
             // Load products relationship with the transaction
-            $order->load('products');
+            $order->load('orderProducts');
 
             return response()->json(['message' => 'Order updated successfully', 'data' => $order]);
         } catch (\Exception $e) {
@@ -235,7 +275,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Order not found'], 404);
         }
 
-        $order->products()->delete();
+        $order->orderProducts()->delete();
         $order->delete();
 
         return response()->json(null, 204);
@@ -259,7 +299,18 @@ class OrderController extends Controller
         $order->save();
 
         $user = User::find($order->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
+        try {
+            if (isset($user->device_token)) {
+                $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
+            }
+
+        } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+            // Log the error for debugging purposes
+            Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+            // Optionally, notify the user about the issue via email or other means
+            // ...
+        }
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to received'], 200);
@@ -284,7 +335,18 @@ class OrderController extends Controller
         $order->save();
 
         $user = User::find($order->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
+        try {
+            if (isset($user->device_token)) {
+                $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
+            }
+
+        } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+            // Log the error for debugging purposes
+            Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+            // Optionally, notify the user about the issue via email or other means
+            // ...
+        }
 
         // Return a success response
         return response()->json(['message' => 'Order status updated to cancelled'], 200);

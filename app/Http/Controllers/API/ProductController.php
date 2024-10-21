@@ -14,7 +14,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         // Build the query with eager loading
-        $query = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy']);
+        $query = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
 
         // Get the query parameters
         $categoryBrandId = $request->query('category_brands_id');
@@ -23,6 +23,11 @@ class ProductController extends Controller
         $updatedBy = $request->query('updated_by');
         $categoryBrands = $request->query('categoryBrands');
         $productTypes = $request->query('productTypes');
+
+        $inventoryTypesId = $request->query('inventory_types_id');
+        $electronicCategoryId = $request->query('electronic_category_id');
+        $electronicBrandId = $request->query('electronic_brand_id');
+        $electronicTypeId = $request->query('electronic_type_id');
 
         // Apply filters if the parameters are provided
         if (isset($categoryBrandId)) {
@@ -51,6 +56,24 @@ class ProductController extends Controller
             $productTypeIds = collect($productTypes)->pluck('id')->toArray();
             $query->whereIn('product_types_id', $productTypeIds);
         }
+
+        // Apply filters for the newly added fields
+        if (isset($inventoryTypesId)) {
+            $query->where('inventory_types_id', $inventoryTypesId);
+        }
+
+        if (isset($electronicCategoryId)) {
+            $query->where('electronic_category_id', $electronicCategoryId);
+        }
+
+        if (isset($electronicBrandId)) {
+            $query->where('electronic_brand_id', $electronicBrandId);
+        }
+
+        if (isset($electronicTypeId)) {
+            $query->where('electronic_type_id', $electronicTypeId);
+        }
+
         // Add more filters as needed
         $query->latest();
         // Execute the query and get the results
@@ -62,7 +85,7 @@ class ProductController extends Controller
 
     public function show($id)
     {
-        $product = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy'])->find($id);
+        $product = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType'])->find($id);
         if (!$product) {
             return response()->json(['message' => 'product not found'], 404);
         }
@@ -78,8 +101,12 @@ class ProductController extends Controller
             'price' => 'required|numeric',
             'quantity' => 'required|integer',
             'details' => 'nullable|string',
-            'category_brands_id' => 'required|exists:category_brands,id',
-            'product_types_id' => 'required|exists:product_types,id',
+            'category_brands_id' => 'nullable|exists:category_brands,id',
+            'product_types_id' => 'nullable|exists:product_types,id',
+            'inventory_types_id' => 'required|exists:inventory_types,id',
+            'electronic_category_id' => 'nullable|exists:electronic_categories,id',
+            'electronic_brand_id' => 'nullable|exists:electronic_brands,id',
+            'electronic_type_id' => 'nullable|exists:electronic_types,id',
         ]);
 
         $photoData = null;
@@ -96,8 +123,12 @@ class ProductController extends Controller
             'price' => $validated['price'],
             'quantity' => $validated['quantity'],
             'details' => $validated['details'],
-            'category_brands_id' => $validated['category_brands_id'],
-            'product_types_id' => $validated['product_types_id'],
+            'category_brands_id' => $validated['category_brands_id'] ?? null,
+            'product_types_id' => $validated['product_types_id'] ?? null,
+            'inventory_types_id' => $validated['inventory_types_id'],
+            'electronic_category_id' => $validated['electronic_category_id'] ?? null,
+            'electronic_brand_id' => $validated['electronic_brand_id'] ?? null,
+            'electronic_type_id' => $validated['electronic_type_id'] ?? null,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
@@ -119,8 +150,12 @@ class ProductController extends Controller
             'price' => 'sometimes|required|numeric',
             'quantity' => 'sometimes|required|integer',
             'details' => 'nullable|string',
-            'category_brands_id' => 'sometimes|required|exists:category_brands,id',
-            'product_types_id' => 'required|exists:product_types,id',
+            'category_brands_id' => 'nullable|exists:category_brands,id',
+            'product_types_id' => 'nullable|exists:product_types,id',
+            'inventory_types_id' => 'sometimes|required|exists:inventory_types,id',
+            'electronic_category_id' => 'nullable|exists:electronic_categories,id',
+            'electronic_brand_id' => 'nullable|exists:electronic_brands,id',
+            'electronic_type_id' => 'nullable|exists:electronic_types,id',
         ]);
 
         if ($request->hasFile('photo')) {

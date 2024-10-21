@@ -3,9 +3,15 @@
 use App\Http\Controllers\API\CategoryBrandController;
 use App\Http\Controllers\API\dashboard\BarChartsController;
 use App\Http\Controllers\API\dashboard\StatisticsCardsController;
+use App\Http\Controllers\API\ElectronicBrandController;
+use App\Http\Controllers\API\ElectronicCategoryController;
+use App\Http\Controllers\API\ElectronicTypeController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
+use App\Http\Controllers\API\FaqController;
+use App\Http\Controllers\API\InventoryTypeController;
 use App\Http\Controllers\API\MessageController;
+use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OrderController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PackagePaymentController;
@@ -19,6 +25,7 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UserPermissionsController;
 use App\Http\Controllers\API\UserRolesController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Route;
 
@@ -64,18 +71,50 @@ Route::resource('app-explore-category-blogs', ExploreCategoryBlogController::cla
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
+//========== email testing ====
+Route::post('test-email', [EmailTestController::class, 'testEmail']);
+
 Route::post('/test-notification', [PushNotificationTestController::class, 'sendPushNotification']);
+
+Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
 
 //=============================== private routes ==================================
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
 
+        //-------  for app  ------------
+        // App route
+        Route::get('app-get-electronic-categories', [ElectronicCategoryController::class, 'indexForApp']);
+        // App route for getting electronic brands
+        Route::get('app-get-electronic-brands', [ElectronicBrandController::class, 'indexForApp']);
+
+        // App route for getting electronic types
+        Route::get('app-get-electronic-types', [ElectronicTypeController::class, 'indexForApp']);
+
+        Route::apiResource('inventory-types', InventoryTypeController::class);
+
+        // Electronic Categories API Routes
+        Route::apiResource('electronic-categories', ElectronicCategoryController::class);
+
+        // Electronic Brands API Routes
+        Route::apiResource('electronic-brands', ElectronicBrandController::class);
+
+        // Electronic Types API Routes
+        Route::apiResource('electronic-types', ElectronicTypeController::class);
+
+        //================ notifications =======================
+        Route::post('send-notification', [NotificationController::class, 'sendNotification']);
+
+        //====================== faqs =========================
+        Route::Resource('faqs', FaqController::class);
+        Route::get('get-faqs', [FaqController::class, 'get_faqs']);
+
         //======================== dashboard statistics ===========================
         Route::get('order-statistics', [StatisticsCardsController::class, 'getOrderStatistics']);
         Route::get('package-statistics', [StatisticsCardsController::class, 'getPackageStatistics']);
         Route::get('customer-statistics', [StatisticsCardsController::class, 'getCustomerStatistics']);
-        Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
+        // Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
 
         // Route to get product stats
         Route::get('product-barchat-stats', [BarChartsController::class, 'getProductStats']);
@@ -119,7 +158,7 @@ Route::group(
         Route::post('/save-token', [UserController::class, 'SaveToken']);
 
         //=============== orders transactions ========================
-        Route::apiResource('orders', OrderController::class)->except(['store']);
+        // Route::apiResource('orders', OrderController::class)->except(['store']);
 
         //=============== orders transactions ========================
         Route::apiResource('orders', OrderController::class);

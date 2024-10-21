@@ -10,6 +10,8 @@ use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PackageController extends Controller
@@ -163,11 +165,33 @@ class PackageController extends Controller
 
         // Send notification to the user
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification(
-            $user->device_token,
-            'New Package Order',
-            'Package order #' . $packageNumber . ' has been created successfully'
-        );
+
+        try {
+            if (isset($user->device_token)) {
+                $this->firebaseService->sendNotification(
+                    $user->device_token,
+                    'New Package Order',
+                    'Package order #' . $packageNumber . ' has been created successfully'
+                );
+            }
+
+        } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+            // Log the error for debugging purposes
+            Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+            // Optionally, notify the user about the issue via email or other means
+            // ...
+        }
+
+        // Send notifications to all Admin users
+        $admins = User::role('Admin')->get();
+        foreach ($admins as $admin) {
+            if ($admin->email) {
+                Mail::send('emails.newPackageOrderAdmin', ['package' => $package], function ($message) use ($admin) {
+                    $message->to($admin->email)->subject('New Package Order Submitted');
+                });
+            }
+        }
 
         return response()->json(['message' => 'Package created successfully', 'data' => $package], 201);
     }
@@ -218,25 +242,37 @@ class PackageController extends Controller
 
         $user = User::find($package->created_by);
 
-        if ($package->status === 'processing' || $package->delivery_status  === 'processing') {
+        try {
+            
+        if (isset($user->device_token)) {
+            if ($package->status === 'processing' || $package->delivery_status === 'processing') {
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
+            }
+
+            if ($package->status === 'transit' || $package->delivery_status === 'transit') {
+
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
+            }
+
+            if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
+
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
+            }
+
+            if ($package->status === 'cancelled' || $package->delivery_status === 'cancelled') {
+
+                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
+            }
         }
 
-        if ($package->status === 'transit' || $package->delivery_status === 'transit') {
+    }catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+        // Log the error for debugging purposes
+        Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
 
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
-        }
-
-        if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
-
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
-        }
-
-        if ($package->status === 'cancelled'  || $package->delivery_status === 'cancelled') {
-
-            $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
-        }
+        // Optionally, notify the user about the issue via email or other means
+        // ...
+    }
 
         return response()->json(['message' => 'Package updated successfully', 'data' => $package]);
     }
@@ -260,7 +296,20 @@ class PackageController extends Controller
         $package->save();
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
+
+        try {
+
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
+        }
+
+    }catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+        // Log the error for debugging purposes
+        Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+        // Optionally, notify the user about the issue via email or other means
+        // ...
+    }
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to cancelled'], 200);
@@ -284,7 +333,19 @@ class PackageController extends Controller
         $package->save();
 
         $user = User::find($package->created_by);
-        $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+
+        try {
+        if (isset($user->device_token)) {
+            $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+        }
+
+    }catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+        // Log the error for debugging purposes
+        Log::error('Device token not found for user ID: ' . $user->id . ' - ' . $e->getMessage());
+
+        // Optionally, notify the user about the issue via email or other means
+        // ...
+    }
 
         // Return a success response
         return response()->json(['message' => 'Package status updated to received'], 200);
