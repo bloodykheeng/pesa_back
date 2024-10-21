@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AdsController;
 use App\Http\Controllers\API\CategoryBrandController;
 use App\Http\Controllers\API\dashboard\BarChartsController;
 use App\Http\Controllers\API\dashboard\StatisticsCardsController;
@@ -85,6 +86,9 @@ Route::group(
 
         //-------  for app  ------------
         // App route
+        Route::resource('ads', AdsController::class);
+        Route::get('app-get-ads', [AdsController::class, 'get_ads']);
+
         Route::get('app-get-electronic-categories', [ElectronicCategoryController::class, 'indexForApp']);
         // App route for getting electronic brands
         Route::get('app-get-electronic-brands', [ElectronicBrandController::class, 'indexForApp']);
