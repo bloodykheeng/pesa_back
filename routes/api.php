@@ -3,9 +3,13 @@
 use App\Http\Controllers\API\CategoryBrandController;
 use App\Http\Controllers\API\dashboard\BarChartsController;
 use App\Http\Controllers\API\dashboard\StatisticsCardsController;
+use App\Http\Controllers\API\ElectronicBrandController;
+use App\Http\Controllers\API\ElectronicCategoryController;
+use App\Http\Controllers\API\ElectronicTypeController;
 use App\Http\Controllers\API\ExploreCategoryBlogController;
 use App\Http\Controllers\API\ExploreCategoryController;
 use App\Http\Controllers\API\FaqController;
+use App\Http\Controllers\API\InventoryTypeController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OrderController;
@@ -78,6 +82,26 @@ Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTran
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
+
+        //-------  for app  ------------
+        // App route
+        Route::get('app-get-electronic-categories', [ElectronicCategoryController::class, 'indexForApp']);
+        // App route for getting electronic brands
+        Route::get('app-get-electronic-brands', [ElectronicBrandController::class, 'indexForApp']);
+
+        // App route for getting electronic types
+        Route::get('app-get-electronic-types', [ElectronicTypeController::class, 'indexForApp']);
+
+        Route::apiResource('inventory-types', InventoryTypeController::class);
+
+        // Electronic Categories API Routes
+        Route::apiResource('electronic-categories', ElectronicCategoryController::class);
+
+        // Electronic Brands API Routes
+        Route::apiResource('electronic-brands', ElectronicBrandController::class);
+
+        // Electronic Types API Routes
+        Route::apiResource('electronic-types', ElectronicTypeController::class);
 
         //================ notifications =======================
         Route::post('send-notification', [NotificationController::class, 'sendNotification']);

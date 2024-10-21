@@ -20,6 +20,10 @@ class Product extends Model
         'details',
         'category_brands_id',
         'product_types_id',
+        'inventory_types_id',
+        'electronic_category_id',
+        'electronic_brand_id',
+        'electronic_type_id',
         'created_by',
         'updated_by',
     ];
@@ -47,4 +51,29 @@ class Product extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    // Relationship to InventoryType (assuming you have an InventoryType model)
+    public function inventoryType()
+    {
+        return $this->belongsTo(InventoryType::class, 'inventory_types_id');
+    }
+
+    // Relationship to ElectronicCategory (assuming you have an ElectronicCategory model)
+    public function electronicCategory()
+    {
+        return $this->belongsTo(ElectronicCategory::class, 'electronic_category_id');
+    }
+
+    // Relationship to ElectronicBrand (assuming you have an ElectronicBrand model)
+    public function electronicBrand()
+    {
+        return $this->belongsTo(ElectronicBrand::class, 'electronic_brand_id');
+    }
+
+    // Relationship to ElectronicType (assuming you have an ElectronicType model)
+    public function electronicType()
+    {
+        return $this->belongsTo(ElectronicType::class, 'electronic_type_id');
+    }
+
 }
