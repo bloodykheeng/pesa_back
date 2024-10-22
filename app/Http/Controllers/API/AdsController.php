@@ -150,11 +150,18 @@ class AdsController extends Controller
     }
 
     public function get_ads()
-    {
-        // Fetch all FAQs
-        $ads = Ad::all();
-        return response()->json($ads);
-    }
+{
+    // Fetch only active ads that haven't reached the end date
+    $ads = Ad::where('status', 'active')
+        ->where(function ($query) {
+            $query->whereNull('end_date') // End date is null
+                  ->orWhere('end_date', '>', now()); // Or end date is greater than the current date
+        })
+        ->get();
+
+    return response()->json($ads);
+}
+
 
     //=================== upload Photos Helper functions ==========================
 
