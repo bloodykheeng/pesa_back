@@ -223,6 +223,15 @@ class AuthController extends Controller
         return response()->json($response);
     }
 
+    public function checkAppLoginStatus()
+    {
+        if (Auth::check()) {
+            return response()->json(['message' => 'User is logged in'], 200);
+        } else {
+            return response()->json(['message' => 'Token is invalid. Please login again'], 401);
+        }
+    }
+
     public function thirdPartyLoginAuthentication(Request $request)
     {
         try {

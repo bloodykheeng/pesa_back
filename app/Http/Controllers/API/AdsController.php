@@ -8,12 +8,22 @@ use App\Models\Ad;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Services\FirebaseService;
 
 class AdsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+    protected $firebaseService;
+
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
+
     public function index(Request $request)
     {
         // Build the query with eager loading
@@ -31,10 +41,10 @@ class AdsController extends Controller
         if (!empty($startDate)) {
             $query->whereDate('start_date', '>=', $startDate); // Or use other comparison as needed
         }
-        
+
         if (!empty($endDate)) {
             $query->whereDate('end_date', '<=', $endDate);
-        }     
+        }
 
         if (isset($title)) {
             $query->where('title', 'like', "%$title%");
@@ -97,6 +107,18 @@ class AdsController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
+
+
+        // Check if the status is 'active' and the end date is greater than the current date
+        if ($ad->status === 'active' && $ad->end_date > now()) {
+            $this->firebaseService->sendNotificationTopic(
+                $validated['title'],
+                $validated['details']
+            );
+        }
+
+
+
         return response()->json(['message' => 'Ad created successfully', 'data' => $ad], 201);
     }
 
@@ -123,12 +145,19 @@ class AdsController extends Controller
 
             $photoData = $this->handlePhotoUpload($request->file('photo'), 'ad_photos');
             $validated['photo_url'] = $photoData['photo_url'] ?? null;
-            
         }
 
         $validated['updated_by'] = Auth::id();
 
         $ad->update($validated);
+
+        // Check if the status is 'active' and the end date is greater than the current date
+        if ($ad->status === 'active' && $ad->end_date > now()) {
+            $this->firebaseService->sendNotificationTopic(
+                $validated['title'],
+                $validated['details']
+            );
+        }
 
         return response()->json(['message' => 'Ad updated successfully', 'data' => $ad]);
     }
@@ -150,17 +179,17 @@ class AdsController extends Controller
     }
 
     public function get_ads()
-{
-    // Fetch only active ads that haven't reached the end date
-    $ads = Ad::where('status', 'active')
-        ->where(function ($query) {
-            $query->whereNull('end_date') // End date is null
-                  ->orWhere('end_date', '>', now()); // Or end date is greater than the current date
-        })
-        ->get();
+    {
+        // Fetch only active ads that haven't reached the end date
+        $ads = Ad::where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('end_date') // End date is null
+                    ->orWhere('end_date', '>', now()); // Or end date is greater than the current date
+            })
+            ->get();
 
-    return response()->json($ads);
-}
+        return response()->json($ads);
+    }
 
 
     //=================== upload Photos Helper functions ==========================
@@ -215,5 +244,4 @@ class AdsController extends Controller
             File::delete($photoPath);
         }
     }
-    
 }

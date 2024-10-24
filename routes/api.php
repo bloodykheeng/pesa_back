@@ -86,6 +86,7 @@ Route::group(
 
         //-------  for app  ------------
         // App route
+        Route::post('/check-auth-token', [AuthController::class, 'checkAppLoginStatus']);
         Route::resource('ads', AdsController::class);
         Route::get('app-get-ads', [AdsController::class, 'get_ads']);
 

@@ -30,15 +30,31 @@ class FirebaseService
 
         $factory = (new Factory)->withServiceAccount($serviceAccountPath);
         $this->messaging = $factory->createMessaging();
-
     }
 
-    public function sendNotification($token, $title, $body, $data=[])
+    public function sendNotification($token, $title, $body, $data = [])
     {
         $messege = CloudMessage::withTarget('token', $token)
-         ->withNotification(['title'=>$title, 'body'=>$body])
-         ->withData($data);
+            ->withNotification(['title' => $title, 'body' => $body])
+            ->withData($data);
 
         $this->messaging->send($messege);
+    }
+
+    public function sendNotificationTopic($title, $body, $data = [])
+    {
+
+        try {
+            $messege = CloudMessage::withTarget('topic', 'elevatePesa')
+                ->withNotification(['title' => $title, 'body' => $body])
+                ->withData($data);
+
+            $this->messaging->send($messege);
+        } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
+            // Log the error for debugging purposes
+
+            // Optionally, notify the user about the issue via email or other means
+            // ...
+        }
     }
 }
