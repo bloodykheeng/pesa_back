@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Ad;
+use App\Services\FirebaseService;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use App\Services\FirebaseService;
 
 class AdsController extends Controller
 {
@@ -22,7 +22,6 @@ class AdsController extends Controller
     {
         $this->firebaseService = $firebaseService;
     }
-
 
     public function index(Request $request)
     {
@@ -85,10 +84,10 @@ class AdsController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'details' => 'nullable|string',
-            'photo' => 'nullable|string',
             'status' => 'required|in:active,inactive,pending',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', // Expect a file for the photo
         ]);
 
         $photoData = null;
@@ -107,8 +106,6 @@ class AdsController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
-
-
         // Check if the status is 'active' and the end date is greater than the current date
         if ($ad->status === 'active' && $ad->end_date > now()) {
             $this->firebaseService->sendNotificationTopic(
@@ -116,8 +113,6 @@ class AdsController extends Controller
                 $validated['details']
             );
         }
-
-
 
         return response()->json(['message' => 'Ad created successfully', 'data' => $ad], 201);
     }
@@ -136,6 +131,7 @@ class AdsController extends Controller
             'status' => 'required|in:active,inactive,pending',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048', // Expect a file for the photo
         ]);
 
         if ($request->hasFile('photo')) {
@@ -190,7 +186,6 @@ class AdsController extends Controller
 
         return response()->json($ads);
     }
-
 
     //=================== upload Photos Helper functions ==========================
 

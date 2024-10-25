@@ -14,7 +14,7 @@ class ProductTypeController extends Controller
     public function index(Request $request)
     {
         // Build the query with eager loading
-        $query = ProductType::with(['products', 'createdBy', 'updatedBy']);
+        $query = ProductType::with(['createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');
@@ -53,10 +53,6 @@ class ProductTypeController extends Controller
         // Return the results as a JSON response
         return response()->json(['data' => $categories]);
     }
-
-
-    
-
 
     public function app_index(Request $request)
     {
@@ -103,7 +99,7 @@ class ProductTypeController extends Controller
 
     public function show($id)
     {
-        $type = ProductType::with(['products', 'createdBy', 'updatedBy'])->find($id);
+        $type = ProductType::with(['createdBy', 'updatedBy'])->find($id);
         if (!$type) {
             return response()->json(['message' => 'Product type not found'], 404);
         }

@@ -14,7 +14,7 @@ class CategoryBrandController extends Controller
     public function index(Request $request)
     {
         // Build the query with eager loading
-        $query = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy']);
+        $query = CategoryBrand::with(['productCategory', 'createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');
@@ -107,7 +107,7 @@ class CategoryBrandController extends Controller
 
     public function show($id)
     {
-        $brand = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy'])->find($id);
+        $brand = CategoryBrand::with(['productCategory', 'createdBy', 'updatedBy'])->find($id);
         if (!$brand) {
             return response()->json(['message' => 'Category Brand not found'], 404);
         }

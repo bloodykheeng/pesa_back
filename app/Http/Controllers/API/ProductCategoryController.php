@@ -14,7 +14,7 @@ class ProductCategoryController extends Controller
     public function index(Request $request)
     {
         // Build the query with eager loading
-        $query = ProductCategory::with(['brands', 'createdBy', 'updatedBy']);
+        $query = ProductCategory::with(['createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');
@@ -53,7 +53,6 @@ class ProductCategoryController extends Controller
         // Return the results as a JSON response
         return response()->json(['data' => $categories]);
     }
-
 
     public function app_index(Request $request)
     {
@@ -100,7 +99,7 @@ class ProductCategoryController extends Controller
 
     public function show($id)
     {
-        $category = ProductCategory::with(['brands', 'createdBy', 'updatedBy'])->find($id);
+        $category = ProductCategory::with(['createdBy', 'updatedBy'])->find($id);
         if (!$category) {
             return response()->json(['message' => 'Product Category not found'], 404);
         }
