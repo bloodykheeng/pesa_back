@@ -51,6 +51,10 @@ yarn-error.log
 /public/product_photos/*
 /public/blog_photos/*
 /public/category_photos/*
+/public/package_photos/*
+/public/product_photos/*
+/public/type_photos/*
+/public/user_photos/*
 
 
 .vercel
