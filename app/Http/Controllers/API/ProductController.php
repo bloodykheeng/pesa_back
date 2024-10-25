@@ -83,6 +83,79 @@ class ProductController extends Controller
         return response()->json(['data' => $products]);
     }
 
+
+    public function app_index(Request $request)
+    {
+        // Build the query with eager loading
+        $query = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
+
+        // Get the query parameters
+        $categoryBrandId = $request->query('category_brands_id');
+        $productTypeId = $request->query('product_types_id');
+        $createdBy = $request->query('created_by');
+        $updatedBy = $request->query('updated_by');
+        $categoryBrands = $request->query('categoryBrands');
+        $productTypes = $request->query('productTypes');
+
+        $inventoryTypesId = $request->query('inventory_types_id');
+        $electronicCategoryId = $request->query('electronic_category_id');
+        $electronicBrandId = $request->query('electronic_brand_id');
+        $electronicTypeId = $request->query('electronic_type_id');
+
+        // Apply filters if the parameters are provided
+        if (isset($categoryBrandId)) {
+            $query->where('category_brands_id', $categoryBrandId);
+        }
+
+        if (isset($productTypeId)) {
+            $query->where('product_types_id', $productTypeId);
+        }
+
+        if (isset($createdBy)) {
+            $query->where('created_by', $createdBy);
+        }
+
+        if (isset($updatedBy)) {
+            $query->where('updated_by', $updatedBy);
+        }
+
+        // Extract the 'id' values from the arrays of objects
+        if (isset($categoryBrands)) {
+            $categoryBrandIds = collect($categoryBrands)->pluck('id')->toArray();
+            $query->whereIn('category_brands_id', $categoryBrandIds);
+        }
+
+        if (isset($productTypes)) {
+            $productTypeIds = collect($productTypes)->pluck('id')->toArray();
+            $query->whereIn('product_types_id', $productTypeIds);
+        }
+
+        // Apply filters for the newly added fields
+        if (isset($inventoryTypesId)) {
+            $query->where('inventory_types_id', $inventoryTypesId);
+        }
+
+        if (isset($electronicCategoryId)) {
+            $query->where('electronic_category_id', $electronicCategoryId);
+        }
+
+        if (isset($electronicBrandId)) {
+            $query->where('electronic_brand_id', $electronicBrandId);
+        }
+
+        if (isset($electronicTypeId)) {
+            $query->where('electronic_type_id', $electronicTypeId);
+        }
+
+        // Add more filters as needed
+        $query->latest();
+        // Execute the query and get the results
+        $products = $query->get();
+
+        // Return the results as a JSON response
+        return response()->json(['data' => $products]);
+    }
+
     public function show($id)
     {
         $product = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType'])->find($id);

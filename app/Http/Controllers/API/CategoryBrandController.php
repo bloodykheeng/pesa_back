@@ -58,6 +58,53 @@ class CategoryBrandController extends Controller
         return response()->json(['data' => $brands]);
     }
 
+    public function app_index(Request $request)
+    {
+        // Build the query with eager loading
+        $query = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy']);
+
+        // Get the query parameters
+        $code = $request->query('code');
+        $name = $request->query('name');
+        $status = $request->query('status');
+        $createdBy = $request->query('created_by');
+        $updatedBy = $request->query('updated_by');
+        $productCategoryId = $request->query('product_categories_id'); // New filter
+
+        // Apply filters if the parameters are provided
+        if (isset($code)) {
+            $query->where('code', $code);
+        }
+
+        if (isset($name)) {
+            $query->where('name', 'like', "%$name%");
+        }
+
+        if (isset($status)) {
+            $query->where('status', $status);
+        }
+
+        if (isset($createdBy)) {
+            $query->where('created_by', $createdBy);
+        }
+
+        if (isset($updatedBy)) {
+            $query->where('updated_by', $updatedBy);
+        }
+
+        if (isset($productCategoryId)) {
+            $query->where('product_categories_id', $productCategoryId);
+        }
+
+        // Add more filters as needed
+        $query->latest();
+        // Execute the query and get the results
+        $brands = $query->get();
+
+        // Return the results as a JSON response
+        return response()->json(['data' => $brands]);
+    }
+
     public function show($id)
     {
         $brand = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy'])->find($id);
