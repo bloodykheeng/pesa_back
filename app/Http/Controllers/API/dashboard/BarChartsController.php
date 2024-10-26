@@ -68,6 +68,38 @@ class BarChartsController extends Controller
             $ordersQuery->where('created_by', $createdBy);
         }
 
+        // New filter: inventory types
+        if ($request->has('inventoryTypes') && is_array($request->input('inventoryTypes'))) {
+            $inventoryTypeIds = collect($request->input('inventoryTypes'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.inventoryType', function ($q) use ($inventoryTypeIds) {
+                $q->whereIn('id', $inventoryTypeIds);
+            });
+        }
+
+        // New filter: electronic categories
+        if ($request->has('electronicCategories') && is_array($request->input('electronicCategories'))) {
+            $electronicCategoryIds = collect($request->input('electronicCategories'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.electronicCategory', function ($q) use ($electronicCategoryIds) {
+                $q->whereIn('id', $electronicCategoryIds);
+            });
+        }
+
+        // New filter: electronic brands
+        if ($request->has('electronicBrands') && is_array($request->input('electronicBrands'))) {
+            $electronicBrandIds = collect($request->input('electronicBrands'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.electronicBrand', function ($q) use ($electronicBrandIds) {
+                $q->whereIn('id', $electronicBrandIds);
+            });
+        }
+
+        // New filter: electronic types
+        if ($request->has('electronicTypes') && is_array($request->input('electronicTypes'))) {
+            $electronicTypeIds = collect($request->input('electronicTypes'))->pluck('id');
+            $ordersQuery->whereHas('orderProducts.product.electronicType', function ($q) use ($electronicTypeIds) {
+                $q->whereIn('id', $electronicTypeIds);
+            });
+        }
+
         return $ordersQuery;
     }
 

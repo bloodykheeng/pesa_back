@@ -28,6 +28,7 @@ class ProductController extends Controller
         $electronicCategoryId = $request->query('electronic_category_id');
         $electronicBrandId = $request->query('electronic_brand_id');
         $electronicTypeId = $request->query('electronic_type_id');
+        $electronicTypes = $request->query('electronicTypes');
 
         // Apply filters if the parameters are provided
         if (isset($categoryBrandId)) {
@@ -74,6 +75,12 @@ class ProductController extends Controller
             $query->where('electronic_type_id', $electronicTypeId);
         }
 
+        // Apply filter for electronicTypes (array of objects)
+        if (isset($electronicTypes) && is_array($electronicTypes)) {
+            $electronicTypeIds = collect($electronicTypes)->pluck('id')->toArray();
+            $query->whereIn('electronic_type_id', $electronicTypeIds);
+        }
+
         // Add more filters as needed
         $query->latest();
         // Execute the query and get the results
@@ -82,7 +89,6 @@ class ProductController extends Controller
         // Return the results as a JSON response
         return response()->json(['data' => $products]);
     }
-
 
     public function app_index(Request $request)
     {

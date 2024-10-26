@@ -20,6 +20,17 @@ class ElectronicTypeController extends Controller
         $brandId = $request->query('electronic_brands_id');
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
+        $brands = $request->query('electronic_brands'); // Array of brand objects
+
+        // Filter by electronic brands array of objects
+        if (isset($brands) && is_array($brands)) {
+            // Extract the 'id' values from the array of brand objects using collect
+            $brandIds = collect($brands)->pluck('id')->toArray();
+        
+            // Apply the whereIn filter using the extracted brand IDs
+            $query->whereIn('electronic_brands_id', $brandIds);
+        }
+        
 
         if (isset($brandId)) {
             $query->where('electronic_brands_id', $brandId);

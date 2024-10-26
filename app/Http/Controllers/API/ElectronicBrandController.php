@@ -20,6 +20,17 @@ class ElectronicBrandController extends Controller
         $categoryId = $request->query('electronic_categories_id');
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
+        $categories = $request->query('electronic_categories');
+
+        // Filter by electronic categories array of objects
+        if (isset($categories) && is_array($categories)) {
+            // Extract the 'id' values from the array of objects using collect
+            $categoryIds = collect($categories)->pluck('id')->toArray();
+        
+            // Apply the whereIn filter using the extracted IDs
+            $query->whereIn('electronic_categories_id', $categoryIds);
+        }
+        
 
         if (isset($categoryId)) {
             $query->where('electronic_categories_id', $categoryId);
