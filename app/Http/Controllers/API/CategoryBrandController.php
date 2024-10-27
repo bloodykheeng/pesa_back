@@ -23,6 +23,7 @@ class CategoryBrandController extends Controller
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
         $productCategoryId = $request->query('product_categories_id'); // New filter
+        $productCategories = $request->query('productCategories'); // Array of objects
 
         // Apply filters if the parameters are provided
         if (isset($code)) {
@@ -47,6 +48,13 @@ class CategoryBrandController extends Controller
 
         if (isset($productCategoryId)) {
             $query->where('product_categories_id', $productCategoryId);
+        }
+   
+        // Apply the productCategories filter if provided
+        if (!empty($productCategories) && is_array($productCategories)) {
+            // Extract IDs from the productCategories array
+            $productCategoryIds = collect($productCategories)->pluck('id')->all();
+            $query->whereIn('product_categories_id', $productCategoryIds);
         }
 
         // Add more filters as needed

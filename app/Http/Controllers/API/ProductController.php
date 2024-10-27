@@ -21,13 +21,20 @@ class ProductController extends Controller
         $productTypeId = $request->query('product_types_id');
         $createdBy = $request->query('created_by');
         $updatedBy = $request->query('updated_by');
-        $categoryBrands = $request->query('categoryBrands');
-        $productTypes = $request->query('productTypes');
 
         $inventoryTypesId = $request->query('inventory_types_id');
         $electronicCategoryId = $request->query('electronic_category_id');
         $electronicBrandId = $request->query('electronic_brand_id');
         $electronicTypeId = $request->query('electronic_type_id');
+
+        // Retrieve the arrays of objects from the request
+        $categoryBrands = $request->query('categoryBrands');
+        $productTypes = $request->query('productTypes');
+        $productCategories = $request->query('productCategories');
+        $products = $request->query('products');
+        $inventoryTypes = $request->query('inventoryTypes');
+        $electronicCategories = $request->query('electronicCategories');
+        $electronicBrands = $request->query('electronicBrands');
         $electronicTypes = $request->query('electronicTypes');
 
         // Apply filters if the parameters are provided
@@ -48,15 +55,6 @@ class ProductController extends Controller
         }
 
         // Extract the 'id' values from the arrays of objects
-        if (isset($categoryBrands)) {
-            $categoryBrandIds = collect($categoryBrands)->pluck('id')->toArray();
-            $query->whereIn('category_brands_id', $categoryBrandIds);
-        }
-
-        if (isset($productTypes)) {
-            $productTypeIds = collect($productTypes)->pluck('id')->toArray();
-            $query->whereIn('product_types_id', $productTypeIds);
-        }
 
         // Apply filters for the newly added fields
         if (isset($inventoryTypesId)) {
@@ -75,7 +73,42 @@ class ProductController extends Controller
             $query->where('electronic_type_id', $electronicTypeId);
         }
 
-        // Apply filter for electronicTypes (array of objects)
+        // Apply filters for arrays of objects
+        if (isset($categoryBrands) && is_array($categoryBrands)) {
+            $categoryBrandIds = collect($categoryBrands)->pluck('id')->toArray();
+            $query->whereIn('category_brands_id', $categoryBrandIds);
+        }
+
+        if (isset($productTypes) && is_array($productTypes)) {
+            $productTypeIds = collect($productTypes)->pluck('id')->toArray();
+            $query->whereIn('product_types_id', $productTypeIds);
+        }
+
+        if (isset($productCategories) && is_array($productCategories)) {
+            $productCategoryIds = collect($productCategories)->pluck('id')->toArray();
+            $query->whereIn('product_category_id', $productCategoryIds);
+        }
+
+        if (isset($products) && is_array($products)) {
+            $productIds = collect($products)->pluck('id')->toArray();
+            $query->whereIn('id', $productIds);
+        }
+
+        if (isset($inventoryTypes) && is_array($inventoryTypes)) {
+            $inventoryTypeIds = collect($inventoryTypes)->pluck('id')->toArray();
+            $query->whereIn('inventory_type_id', $inventoryTypeIds);
+        }
+
+        if (isset($electronicCategories) && is_array($electronicCategories)) {
+            $electronicCategoryIds = collect($electronicCategories)->pluck('id')->toArray();
+            $query->whereIn('electronic_category_id', $electronicCategoryIds);
+        }
+
+        if (isset($electronicBrands) && is_array($electronicBrands)) {
+            $electronicBrandIds = collect($electronicBrands)->pluck('id')->toArray();
+            $query->whereIn('electronic_brand_id', $electronicBrandIds);
+        }
+
         if (isset($electronicTypes) && is_array($electronicTypes)) {
             $electronicTypeIds = collect($electronicTypes)->pluck('id')->toArray();
             $query->whereIn('electronic_type_id', $electronicTypeIds);

@@ -14,6 +14,7 @@ use App\Http\Controllers\API\InventoryTypeController;
 use App\Http\Controllers\API\MessageController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OrderController;
+use App\Http\Controllers\API\OrdersExcellExportController;
 use App\Http\Controllers\API\PackageController;
 use App\Http\Controllers\API\PackagePaymentController;
 use App\Http\Controllers\API\PaymentController;
@@ -64,7 +65,6 @@ Route::get('/app-category-brands', [CategoryBrandController::class, 'app_index']
 Route::get('/app-product-types', [ProductTypeController::class, 'app_index']);
 Route::get('/app-products', [ProductController::class, 'app_index']);
 
-
 // Route::resource('app-product-categories', ProductCategoryController::class)->only(['app_index']);
 // Route::resource('app-category-brands', CategoryBrandController::class)->only(['app_index', 'show']);
 // Route::resource('app-product-types', ProductTypeController::class)->only(['index']);
@@ -85,10 +85,15 @@ Route::post('/test-notification', [PushNotificationTestController::class, 'sendP
 
 Route::get('transaction-statistics', [StatisticsCardsController::class, 'getTransactionStatistics']);
 
+Route::post('orders-excel-exports', [OrdersExcellExportController::class, 'exportOrdersData']);
+
 //=============================== private routes ==================================
 Route::group(
     ['middleware' => ['auth:sanctum']],
     function () {
+
+        //------- orders excel export ------------------
+        // Route::post('orders-excel-exports', [OrdersExcellExportController::class, 'exportOrdersData']);
 
         //-------  for app  ------------
         // App route

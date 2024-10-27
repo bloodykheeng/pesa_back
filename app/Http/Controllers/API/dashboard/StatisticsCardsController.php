@@ -22,17 +22,20 @@ class StatisticsCardsController extends Controller
         //     $ordersQuery->whereIn('status', $statuses);
         // }
 
-        if ($request->has('deliveryStatuses') && is_array($request->input('deliveryStatuses'))) {
+        // Filter by delivery statuses
+        if ($request->has('deliveryStatuses') && is_array($request->input('deliveryStatuses')) && !empty($request->input('deliveryStatuses'))) {
             $deliveryStatuses = collect($request->input('deliveryStatuses'))->pluck('value');
             $ordersQuery->whereIn('delivery_status', $deliveryStatuses);
         }
-        if ($request->has('paymentStatuses') && is_array($request->input('paymentStatuses'))) {
+
+        // Filter by payment statuses
+        if ($request->has('paymentStatuses') && is_array($request->input('paymentStatuses')) && !empty($request->input('paymentStatuses'))) {
             $paymentStatuses = collect($request->input('paymentStatuses'))->pluck('value');
             $ordersQuery->whereIn('payment_status', $paymentStatuses);
         }
 
         // Filter by product categories
-        if ($request->has('productCategories') && is_array($request->input('productCategories'))) {
+        if ($request->has('productCategories') && is_array($request->input('productCategories')) && !empty($request->input('productCategories'))) {
             $categoryIds = collect($request->input('productCategories'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.categoryBrand.productCategory', function ($q) use ($categoryIds) {
                 $q->whereIn('id', $categoryIds);
@@ -40,7 +43,7 @@ class StatisticsCardsController extends Controller
         }
 
         // Filter by product category brands
-        if ($request->has('productCategoryBrands') && is_array($request->input('productCategoryBrands'))) {
+        if ($request->has('productCategoryBrands') && is_array($request->input('productCategoryBrands')) && !empty($request->input('productCategoryBrands'))) {
             $brandIds = collect($request->input('productCategoryBrands'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.categoryBrand', function ($q) use ($brandIds) {
                 $q->whereIn('id', $brandIds);
@@ -48,7 +51,7 @@ class StatisticsCardsController extends Controller
         }
 
         // Filter by products
-        if ($request->has('products') && is_array($request->input('products'))) {
+        if ($request->has('products') && is_array($request->input('products')) && !empty($request->input('products'))) {
             $productIds = collect($request->input('products'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product', function ($q) use ($productIds) {
                 $q->whereIn('id', $productIds);
@@ -56,7 +59,7 @@ class StatisticsCardsController extends Controller
         }
 
         // Filter by product types
-        if ($request->has('productTypes') && is_array($request->input('productTypes'))) {
+        if ($request->has('productTypes') && is_array($request->input('productTypes')) && !empty($request->input('productTypes'))) {
             $productTypeIds = collect($request->input('productTypes'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.productType', function ($q) use ($productTypeIds) {
                 $q->whereIn('id', $productTypeIds);
@@ -70,7 +73,7 @@ class StatisticsCardsController extends Controller
         }
 
         // New filter: inventory types
-        if ($request->has('inventoryTypes') && is_array($request->input('inventoryTypes'))) {
+        if ($request->has('inventoryTypes') && is_array($request->input('inventoryTypes')) && !empty($request->input('inventoryTypes'))) {
             $inventoryTypeIds = collect($request->input('inventoryTypes'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.inventoryType', function ($q) use ($inventoryTypeIds) {
                 $q->whereIn('id', $inventoryTypeIds);
@@ -78,7 +81,7 @@ class StatisticsCardsController extends Controller
         }
 
         // New filter: electronic categories
-        if ($request->has('electronicCategories') && is_array($request->input('electronicCategories'))) {
+        if ($request->has('electronicCategories') && is_array($request->input('electronicCategories')) && !empty($request->input('electronicCategories'))) {
             $electronicCategoryIds = collect($request->input('electronicCategories'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.electronicCategory', function ($q) use ($electronicCategoryIds) {
                 $q->whereIn('id', $electronicCategoryIds);
@@ -86,7 +89,7 @@ class StatisticsCardsController extends Controller
         }
 
         // New filter: electronic brands
-        if ($request->has('electronicBrands') && is_array($request->input('electronicBrands'))) {
+        if ($request->has('electronicBrands') && is_array($request->input('electronicBrands')) && !empty($request->input('electronicBrands'))) {
             $electronicBrandIds = collect($request->input('electronicBrands'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.electronicBrand', function ($q) use ($electronicBrandIds) {
                 $q->whereIn('id', $electronicBrandIds);
@@ -94,7 +97,7 @@ class StatisticsCardsController extends Controller
         }
 
         // New filter: electronic types
-        if ($request->has('electronicTypes') && is_array($request->input('electronicTypes'))) {
+        if ($request->has('electronicTypes') && is_array($request->input('electronicTypes')) && !empty($request->input('electronicTypes'))) {
             $electronicTypeIds = collect($request->input('electronicTypes'))->pluck('id');
             $ordersQuery->whereHas('orderProducts.product.electronicType', function ($q) use ($electronicTypeIds) {
                 $q->whereIn('id', $electronicTypeIds);

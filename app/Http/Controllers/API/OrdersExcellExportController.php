@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\API\dashboard;
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-class BarChartsController extends Controller
+class OrdersExcellExportController extends Controller
 {
-    //
 
     public function filterOrdersData(Request $request, $ordersQuery)
     {
@@ -106,21 +105,41 @@ class BarChartsController extends Controller
         return $ordersQuery;
     }
 
-    public function getProductStats(Request $request)
+    public function exportOrdersData(Request $request)
     {
-        $status = $request->input('status');
+
+        $request->validate([
+            'startDate' => 'required|date',
+            'endDate' => 'required|date',
+        ]);
+
         $startDate = $request->input('startDate');
         $endDate = $request->input('endDate');
-        $createdBy = $request->input('createdBy');
 
-        if (Carbon::parse($startDate)->greaterThan(Carbon::parse($endDate))) {
+        // return $startDate;
+        // return response()->json(['message' => 'testing', '$startDate' => $startDate, '$endDate' => $endDate], 404);
+
+        // Validate date range
+        if ($startDate && $endDate && Carbon::parse($startDate)->greaterThan(Carbon::parse($endDate))) {
             return response()->json(['error' => 'The startDate must be before the endDate.'], 400);
         }
 
-        // Build the query with optional filters
-        // Build the query with optional filters
-        $query = Order::with(['orderProducts.product']);
-        // $query = Order::query();
+        // Query for orders with necessary nested relationships
+        $query = Order::with([
+            'orderProducts' => function ($query) {
+                $query->with(['product' => function ($productQuery) {
+                    $productQuery->with([
+                        'categoryBrand.productCategory',
+                        'productType',
+                        'inventoryType',
+                        'electronicCategory',
+                        'electronicBrand',
+                        'electronicType',
+                    ]);
+                }]);
+            },
+            'createdBy',
+        ]);
 
         if ($startDate) {
             $query->whereDate('created_at', '>=', Carbon::parse($startDate));
@@ -129,107 +148,42 @@ class BarChartsController extends Controller
         if ($endDate) {
             $query->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
-
         $query = $this->filterOrdersData($request, $query);
 
-        // Fetch the data
-        $orders = $query->get();
+        // Fetch and flatten data for Excel export
+        $data = $query->get()->flatMap(function ($order) {
+            return $order->orderProducts->map(function ($orderProduct) use ($order) {
+                $product = $orderProduct->product;
 
-        // Aggregate the data
-        $productStats = $orders->flatMap(function ($order) {
-            return $order->orderProducts->map(function ($orderProduct) {
                 return [
-                    'product_id' => $orderProduct->product_id,
-                    'product_name' => $orderProduct->product->name,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'amount' => $order->amount,
+                    'address' => $order->address,
+                    'charged_amount' => $order->charged_amount,
+                    'amount_paid' => $order->amount_paid,
+                    'payment_status' => $order->payment_status,
+                    'payment_mode' => $order->payment_mode,
+                    'delivery_status' => $order->delivery_status,
+                    'balance_due' => $order->balance_due,
+                    'created_by' => optional($order->createdBy)->name,
+                    'created_at' => $order->created_at,
+
+                    // Product-specific details
+                    'product_name' => $product->name,
+                    'product_price' => $orderProduct->price,
                     'product_quantity' => $orderProduct->quantity,
-                    'product_sales' => $orderProduct->quantity * $orderProduct->price,
+                    'product_category' => optional($product->categoryBrand->productCategory)->name,
+                    'product_brand' => optional($product->categoryBrand)->name,
+                    'product_type' => optional($product->productType)->name,
+                    'inventory_type' => optional($product->inventoryType)->name,
+                    'electronic_category' => optional($product->electronicCategory)->name,
+                    'electronic_brand' => optional($product->electronicBrand)->name,
+                    'electronic_type' => optional($product->electronicType)->name,
                 ];
             });
-        })->groupBy('product_id')->map(function ($products) {
-            return [
-                'name' => $products->first()['product_name'],
-                'quantity' => $products->sum('product_quantity'),
-                'sales' => $products->sum('product_sales'),
-            ];
-        })->values();
+        });
 
-        // Apply 'orderBy' filter
-        $orderBy = $request->query('orderBy')['value'] ?? 'default';
-        if ($orderBy === 'asc') {
-            $productStats = $productStats->sortBy('sales');
-        } elseif ($orderBy === 'desc') {
-            $productStats = $productStats->sortByDesc('sales');
-        }
-
-        // Apply 'dataLimit' filter
-        $dataLimit = $request->query('dataLimit')['value'] ?? 'all';
-        if ($dataLimit !== 'all') {
-            $dataLimit = (int) $dataLimit;
-            $productStats = $productStats->take($dataLimit);
-        }
-
-        // Return the formatted data
-        return response()->json(["data" => $productStats->values()->toArray(), 'requestParams' => $request->all()]);
+        return response()->json(['data' => $data]); // Replace this with actual Excel export code as needed
     }
-
-    //
-    public function getCustomerStats(Request $request)
-    {
-        $status = $request->input('status');
-        $startDate = $request->input('startDate');
-        $endDate = $request->input('endDate');
-        $createdBy = $request->input('createdBy');
-
-        if (Carbon::parse($startDate)->greaterThan(Carbon::parse($endDate))) {
-            return response()->json(['error' => 'The startDate must be before the endDate.'], 400);
-        }
-
-        // Build the query with optional filters
-        $query = Order::with('createdBy'); // Eager load the 'createdBy' relationship
-
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        if ($startDate) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
-        }
-
-        if ($endDate) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
-        }
-
-        $query = $this->filterOrdersData($request, $query);
-
-        // Fetch the data and aggregate it manually
-        $orders = $query->get();
-
-        $customerStats = $orders->groupBy('created_by')->map(function ($orders, $createdBy) {
-            $user = $orders->first()->createdBy;
-            return [
-                'name' => $user->name,
-                'sales' => $orders->sum('charged_amount'),
-                'quantity' => $orders->count(),
-            ];
-        })->values();
-
-        // Apply 'orderBy' filter
-        $orderBy = $request->query('orderBy')['value'] ?? 'default';
-        if ($orderBy === 'asc') {
-            $customerStats = $customerStats->sortBy('sales');
-        } elseif ($orderBy === 'desc') {
-            $customerStats = $customerStats->sortByDesc('sales');
-        }
-
-        // Apply 'dataLimit' filter
-        $dataLimit = $request->query('dataLimit')['value'] ?? 'all';
-        if ($dataLimit !== 'all') {
-            $dataLimit = (int) $dataLimit;
-            $customerStats = $customerStats->take($dataLimit);
-        }
-
-        // Return the formatted data
-        return response()->json(["data" => $customerStats->values()->toArray(), 'requestParams' => $request->all()]);
-    }
-
 }
