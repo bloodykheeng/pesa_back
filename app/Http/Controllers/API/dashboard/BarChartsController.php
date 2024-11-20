@@ -140,7 +140,8 @@ class BarChartsController extends Controller
             return $order->orderProducts->map(function ($orderProduct) {
                 return [
                     'product_id' => $orderProduct->product_id,
-                    'product_name' => $orderProduct->product->name,
+                    // 'product_name' => $orderProduct->product->name,
+                    'product_name' => $orderProduct->name,
                     'product_quantity' => $orderProduct->quantity,
                     'product_sales' => $orderProduct->quantity * $orderProduct->price,
                 ];
