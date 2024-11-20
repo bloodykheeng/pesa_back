@@ -121,7 +121,7 @@ class OrdersExcellExportController extends Controller
 
         // Validate date range
         if ($startDate && $endDate && Carbon::parse($startDate)->greaterThan(Carbon::parse($endDate))) {
-            return response()->json(['error' => 'The startDate must be before the endDate.'], 400);
+            return response()->json(['message' => 'The startDate must be before the endDate.'], 400);
         }
 
         // Query for orders with necessary nested relationships
@@ -148,6 +148,8 @@ class OrdersExcellExportController extends Controller
         if ($endDate) {
             $query->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
+
+        //
         $query = $this->filterOrdersData($request, $query);
 
         // Fetch and flatten data for Excel export
