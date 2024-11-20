@@ -166,6 +166,14 @@ class OrderController extends Controller
         if (isset($endDate)) {
             $query->whereDate('created_at', '<=', Carbon::parse($endDate));
         }
+
+        if ($request->has('created_by')) {
+            $query->where('created_by', $request->input('created_by'));
+        }
+
+        if ($request->has('updated_by')) {
+            $query->where('updated_by', $request->input('updated_by'));
+        }
         //
         $query = $this->filterOrdersData($request, $query);
 
