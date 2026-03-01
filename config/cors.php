@@ -15,22 +15,41 @@ return [
     |
      */
 
-    'paths' => ['api/*', 'api/api/*', 'sanctum/csrf-cookie', '*'],
-    // 'paths' => ['*'],
+    // 'paths' => ['api/*', 'api/api/*', 'sanctum/csrf-cookie', '*'],
+    // // 'paths' => ['*'],
 
-    'allowed_methods' => ['POST', 'GET', 'DELETE', 'PUT', '*'],
+    // 'allowed_methods' => ['POST', 'GET', 'DELETE', 'PUT', '*'],
 
-    // 'allowed_origins' => ['*'],
-    'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'https://elevatepesa.com', 'https://adb.elevatepesa.com/', 'http://adb.elevatepesa.com/', 'https://darkred-pony-968406.hostingersite.com', 'https://aws-0-eu-central-1.pooler.supabase.com/', 'http://localhost:3000/', '*'],
+    // // 'allowed_origins' => ['*'],
+    // 'allowed_origins' => ['https://elevate-pesa.vercel.app/', 'https://elevatepesa.com', 'https://adb.elevatepesa.com/', 'http://adb.elevatepesa.com/', 'https://darkred-pony-968406.hostingersite.com', 'https://aws-0-eu-central-1.pooler.supabase.com/', 'http://localhost:3000/', '*'],
 
-    'allowed_origins_patterns' => ['*'],
+    // 'allowed_origins_patterns' => ['*'],
 
-    'allowed_headers' => ['X-Custom-Header', 'Upgrade-Insecure-Requests', '*'],
+    // 'allowed_headers' => ['X-Custom-Header', 'Upgrade-Insecure-Requests', '*'],
 
-    'exposed_headers' => [],
+    // 'exposed_headers' => [],
 
-    'max_age' => 0,
+    // 'max_age' => 0,
 
-    'supports_credentials' => false,
+    // 'supports_credentials' => false,
+
+    // 'paths' => ['api/*', 'sanctum/csrf-cookie', '/*'],
+    'paths'                    => ['*'],
+
+    'allowed_methods'          => ['*'],
+
+    // 'allowed_origins'          => ['*'],
+
+    'allowed_origins'          => ['http://localhost:3000', 'https://elevatepesa.com', 'https://adb.elevatepesa.com', 'http://adb.elevatepesa.com'],
+
+    'allowed_origins_patterns' => [],
+
+    'allowed_headers'          => ['*'],
+
+    'exposed_headers'          => [],
+
+    'max_age'                  => 0,
+
+    'supports_credentials'     => false,
 
 ];
