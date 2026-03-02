@@ -1,0 +1,2 @@
+sudo chown -R www-data:www-data /var/www/api.elevatepesa.com/public/user_photos
+sudo chmod -R 775 /var/www/api.elevatepesa.com/public/user_photos
