@@ -57,49 +57,81 @@ class PasswordResetController extends Controller
     //     handleresetPasswordLoad
     // handlestoringNewPassword
 
+    /** How long a reset link works. */
+    public const LINK_MINUTES = 60;
+
+    /**
+     * The page the emailed link opens: GET /api/reset-password?token=...
+     */
     public function handleResetPasswordLoad(Request $request)
     {
-        $validator = Validator::make($request->query(), [
-            'token' => 'required',
-        ]);
+        $reset = $this->validReset($request->query('token'));
 
-        if ($validator->fails()) {
-            return view(
-                'resetPassword',
-                ['errors' => $validator->errors()]
-            );
+        if (! $reset) {
+            return response()->view('resetLinkInvalid', [], 410);
         }
 
-        $resetData = PasswordReset::where('token', $request->query('token'))->first();
-
-        if ($resetData !== null) {
-
-            $user = User::where('email', $resetData['email'])->first();
-
-            if ($user !== null) {
-                return view('resetPassword', compact('user'));
-            }
-        }
-
-        return view('404');
+        return view('resetPassword', ['token' => $reset->token, 'email' => $reset->email]);
     }
 
+    /**
+     * Saves the new password: POST /api/reset-password with token, password, password_confirmation.
+     *
+     * The user comes from the token, never from the request (it used to trust a posted user id,
+     * so anyone could set anyone's password). Answers JSON to JSON callers (the admin dashboard)
+     * and HTML to the emailed form.
+     */
     public function handlestoringNewPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'token' => 'required|string',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
-        if ($validator->fails()) {
-            return View::make('resetPassword')->with(['validator' => $validator, 'user' => (object) ['id' => $request->id]]);
+        $reset = $this->validReset($request->input('token'));
+
+        if (! $reset) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'This reset link is invalid or has expired. Ask for a new one.'], 410)
+                : response()->view('resetLinkInvalid', [], 410);
         }
 
-        $user = User::find($request->id);
-        $user->password = Hash::make($request->password);
-        $user->save();
+        if ($validator->fails()) {
+            return $request->expectsJson()
+                ? response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422)
+                : response()->view('resetPassword', ['token' => $reset->token, 'email' => $reset->email, 'errors' => $validator->errors()], 422);
+        }
 
+        $user = User::where('email', $reset->email)->first();
+        if (! $user) {
+            PasswordReset::where('email', $reset->email)->delete();
+            return $request->expectsJson()
+                ? response()->json(['message' => 'This reset link is invalid or has expired. Ask for a new one.'], 410)
+                : response()->view('resetLinkInvalid', [], 410);
+        }
+
+        $user->password = Hash::make($request->input('password'));
+        $user->save();
+        $user->tokens()->delete(); // sign out every device that used the old password
         PasswordReset::where('email', $user->email)->delete();
 
-        return View::make('passwordResetSuccess');
+        return $request->expectsJson()
+            ? response()->json(['message' => 'Your password has been changed. You can sign in now.'])
+            : View::make('passwordResetSuccess');
+    }
+
+    private function validReset(?string $token): ?PasswordReset
+    {
+        if (! $token) {
+            return null;
+        }
+
+        $reset = PasswordReset::where('token', $token)->first();
+
+        if (! $reset || Carbon::parse($reset->created_at)->lt(now()->subMinutes(self::LINK_MINUTES))) {
+            return null;
+        }
+
+        return $reset;
     }
 }
