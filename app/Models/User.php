@@ -14,6 +14,9 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
+    /** Roles that use the admin dashboard. Everyone else is a customer of the app. */
+    public const STAFF_ROLES = ['Admin', 'Editor'];
+
     /**
      * The attributes that are mass assignable.
      *
