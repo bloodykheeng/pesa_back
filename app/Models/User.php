@@ -108,4 +108,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(ThirdPartyAuthProvider::class, 'user_id', 'id');
     }
+
+    /** Orders this customer placed in the app (orders.created_by). */
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Order::class, 'created_by');
+    }
+
+    /** Package deliveries this customer booked (packages.created_by). */
+    public function packages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Package::class, 'created_by');
+    }
 }

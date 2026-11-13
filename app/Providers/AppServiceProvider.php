@@ -19,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // The staff bell: new orders, package bookings and sign-ups from the app.
+        \App\Models\Order::observe(\App\Observers\StaffAlertObserver::class);
+        \App\Models\Package::observe(\App\Observers\StaffAlertObserver::class);
+        \App\Models\User::observe(\App\Observers\StaffAlertObserver::class);
     }
 }

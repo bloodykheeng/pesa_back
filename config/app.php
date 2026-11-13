@@ -68,6 +68,18 @@ return [
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
     /*
+     * Where the business runs. Times are stored in UTC; "a day" in a filter or chart is a
+     * Kampala calendar day (UTC+3).
+     */
+    'business_timezone' => env('BUSINESS_TIMEZONE', 'Africa/Kampala'),
+
+    /* MailDog's free plan: emails per day. The admin refuses an email send that would go over it. */
+    'mail_daily_limit' => (int) env('MAIL_DAILY_LIMIT', 150),
+
+    /* The admin dashboard's address: password reset links for staff open there. */
+    'admin_url' => env('ADMIN_URL', env('FRONTEND_URL', 'http://localhost:3000')),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
