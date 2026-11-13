@@ -41,6 +41,7 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($data['password'], $user->password) || ! $user->hasAnyRole(User::STAFF_ROLES)) {
             RateLimiter::hit($key, 600);
+            \App\Support\Audit\Audit::event('sign_in_failed', $user, 'Sign-in failed on the admin dashboard', ['login' => $data['email']]);
             throw ValidationException::withMessages(['email' => 'Wrong email or password.']);
         }
 

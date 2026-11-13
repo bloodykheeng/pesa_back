@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CategoryBrand extends Model
+class CategoryBrand extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -46,4 +49,19 @@ class CategoryBrand extends Model
         return $this->hasMany(Product::class, 'category_brands_id', 'id');
     }
 
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return Snapshot::catalog(['product_categories_id' => ['label' => 'Category', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ProductCategory::class)]]);
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Gas & water brands';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) $this->name;
+    }
 }

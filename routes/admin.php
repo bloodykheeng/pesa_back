@@ -11,6 +11,7 @@
 */
 
 use App\Admin\Catalog;
+use App\Http\Controllers\Admin\AuditTrailController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CatalogController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -79,7 +80,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('{id}', [CatalogController::class, 'update'])->whereNumber('id')->name('update');
         });
 
-        // Admins only: accounts, roles, messages to customers
+        // Admins only: accounts, roles, messages to customers, the audit trail
         Route::middleware('role:Admin')->group(function () {
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::post('users', [UserController::class, 'store'])->name('users.store');
@@ -95,6 +96,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('notifications/preview', [NotificationController::class, 'preview'])->name('notifications.preview');
             Route::get('notifications/{id}', [NotificationController::class, 'show'])->whereNumber('id')->name('notifications.show');
             Route::get('notifications/{id}/recipients', [NotificationController::class, 'recipients'])->whereNumber('id')->name('notifications.recipients');
+
+            Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');
+            Route::get('audit-trail/{id}', [AuditTrailController::class, 'show'])->whereNumber('id')->name('audit-trail.show');
         });
     });
 });

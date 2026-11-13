@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ElectronicCategory extends Model
+class ElectronicCategory extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -36,5 +39,21 @@ class ElectronicCategory extends Model
     public function brands()
     {
         return $this->hasMany(ElectronicBrand::class, 'electronic_categories_id');
+    }
+
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return Snapshot::catalog();
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Electronic categories';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) $this->name;
     }
 }

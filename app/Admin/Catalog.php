@@ -79,14 +79,14 @@ class Catalog
             'electronic-brands' => [
                 'model' => ElectronicBrand::class, 'label' => 'electronic brand', 'photo' => 'brand_photos',
                 'search' => ['name', 'code', 'details'], 'filters' => ['status', 'electronic_categories_id'], 'sorts' => ['name', 'code', 'status'],
-                'include' => ['electronicCategory:id,name'], 'counts' => ['types'],
+                'include' => ['electronicCategory:id,name'], 'counts' => ['types', 'products'],
                 'dependents' => [['electronic_types', 'electronic_brands_id', 'types'], ['products', 'electronic_brand_id', 'products']],
                 'rules' => ['name' => 'required|string|max:255', 'code' => 'nullable|string|max:50', 'status' => self::STATUS, 'details' => 'nullable|string', 'electronic_categories_id' => 'required|exists:electronic_categories,id'],
             ],
             'electronic-types' => [
                 'model' => ElectronicType::class, 'label' => 'electronic type', 'photo' => 'type_photos',
                 'search' => ['name', 'code', 'details'], 'filters' => ['status', 'electronic_brands_id'], 'sorts' => ['name', 'code', 'status'],
-                'include' => ['electronicBrand:id,name,electronic_categories_id'], 'counts' => [],
+                'include' => ['electronicBrand:id,name,electronic_categories_id'], 'counts' => ['products'],
                 'dependents' => [['products', 'electronic_type_id', 'products']],
                 'rules' => ['name' => 'required|string|max:255', 'code' => 'nullable|string|max:50', 'status' => self::STATUS, 'details' => 'nullable|string', 'electronic_brands_id' => 'required|exists:electronic_brands,id'],
             ],

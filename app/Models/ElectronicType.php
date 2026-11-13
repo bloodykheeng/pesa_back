@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ElectronicType extends Model
+class ElectronicType extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -29,6 +32,12 @@ class ElectronicType extends Model
         return $this->belongsTo(ElectronicBrand::class, 'electronic_brands_id');
     }
 
+    /** Products listed under this series (products.electronic_type_id). */
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'electronic_type_id');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -37,5 +46,21 @@ class ElectronicType extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return Snapshot::catalog(['electronic_brands_id' => ['label' => 'Brand', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ElectronicBrand::class)]]);
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Electronic series';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) $this->name;
     }
 }

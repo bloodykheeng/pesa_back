@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Product extends Model
+class Product extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -76,4 +79,32 @@ class Product extends Model
         return $this->belongsTo(ElectronicType::class, 'electronic_type_id');
     }
 
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return [
+            'name' => ['label' => 'Name', 'type' => 'string'],
+            'status' => ['label' => 'Status', 'type' => 'enum'],
+            'inventory_types_id' => ['label' => 'Kind', 'type' => 'relation', 'resolve' => Snapshot::nameOf(InventoryType::class)],
+            'category_brands_id' => ['label' => 'Gas / water brand', 'type' => 'relation', 'resolve' => Snapshot::nameOf(CategoryBrand::class)],
+            'product_types_id' => ['label' => 'Product type', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ProductType::class)],
+            'electronic_category_id' => ['label' => 'Electronic category', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ElectronicCategory::class)],
+            'electronic_brand_id' => ['label' => 'Electronic brand', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ElectronicBrand::class)],
+            'electronic_type_id' => ['label' => 'Series', 'type' => 'relation', 'resolve' => Snapshot::nameOf(ElectronicType::class)],
+            'price' => ['label' => 'Price', 'type' => 'money'],
+            'quantity' => ['label' => 'In stock', 'type' => 'number'],
+            'details' => ['label' => 'Details', 'type' => 'text'],
+            'photo_url' => ['label' => 'Photo', 'type' => 'file'],
+        ];
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Products';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) $this->name;
+    }
 }

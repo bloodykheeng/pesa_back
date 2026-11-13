@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,7 +13,7 @@ use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasSnapshotSchema
 {
     use HasFactory, Notifiable, HasApiTokens, HasRoles;
 
@@ -119,5 +122,33 @@ class User extends Authenticatable
     public function packages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Package::class, 'created_by');
+    }
+
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return [
+            'name' => ['label' => 'Full name', 'type' => 'string'],
+            'email' => ['label' => 'Email', 'type' => 'string'],
+            'phone' => ['label' => 'Phone', 'type' => 'string'],
+            'role' => ['label' => 'Role', 'type' => 'string', 'current' => fn (self $user) => $user->getRoleNames()->implode(', ') ?: null],
+            'status' => ['label' => 'Status', 'type' => 'enum'],
+            'gender' => ['label' => 'Gender', 'type' => 'enum'],
+            'date_of_birth' => ['label' => 'Date of birth', 'type' => 'date'],
+            'nin' => ['label' => 'NIN', 'type' => 'string'],
+            'agree' => ['label' => 'Agreed to the terms', 'type' => 'boolean'],
+            'photo_url' => ['label' => 'Photo', 'type' => 'file'],
+            'password' => ['label' => 'Password', 'type' => 'secret'],
+        ];
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Accounts';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) ($this->name ?: $this->email);
     }
 }

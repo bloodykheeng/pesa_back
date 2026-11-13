@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Package extends Model
+class Package extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -59,5 +62,36 @@ class Package extends Model
     public function updatedBy()
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return [
+            'package_number' => ['label' => 'Package number', 'type' => 'string'],
+            'name' => ['label' => 'What it is', 'type' => 'string'],
+            'pickup' => ['label' => 'Pick up', 'type' => 'string'],
+            'destination' => ['label' => 'Destination', 'type' => 'string'],
+            'extraInfo' => ['label' => 'Extra information', 'type' => 'text'],
+            'status' => ['label' => 'Status', 'type' => 'enum'],
+            'payment_mode' => ['label' => 'Payment mode', 'type' => 'enum', 'labels' => Snapshot::PAYMENT_MODES],
+            'payment_status' => ['label' => 'Payment', 'type' => 'enum'],
+            'delivery_status' => ['label' => 'Delivery', 'type' => 'enum'],
+            'charged_amount' => ['label' => 'Charged', 'type' => 'money'],
+            'amount_paid' => ['label' => 'Paid', 'type' => 'money'],
+            'balance_due' => ['label' => 'Balance due', 'type' => 'money'],
+            'photo_url' => ['label' => 'Photo', 'type' => 'file'],
+            'order_number' => ['label' => 'Order number', 'type' => 'string'],
+        ];
+    }
+
+    public static function auditModule(): string
+    {
+        return 'Packages';
+    }
+
+    public function auditTitle(): string
+    {
+        return 'Package ' . ($this->package_number ? '#' . $this->package_number . ' ' : '') . $this->name;
     }
 }

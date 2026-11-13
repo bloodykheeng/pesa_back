@@ -118,6 +118,9 @@ class UserController extends Controller
             'status' => $before['status'] !== $data['status'] ? [$before['status'], $data['status']] : null,
         ]);
         $emails->accessChanged($user, $changes, $request->user());
+        if (isset($changes['role'])) {
+            \App\Support\Audit\Audit::change($user, 'role', 'Role', ...$changes['role']);
+        }
         if (($changes['status'][1] ?? null) === 'inactive') {
             $user->tokens()->delete(); // an inactive account is signed out everywhere
         }

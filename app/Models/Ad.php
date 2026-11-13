@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSnapshotSchema;
+use App\Support\Audit\Snapshot;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Ad extends Model
+class Ad extends Model implements HasSnapshotSchema
 {
     use HasFactory;
 
@@ -66,5 +69,26 @@ class Ad extends Model
         return $query->where('status', 'active');
     }
 
+    /** How the audit trail describes this record (docs/audit-trail.md). */
+    public static function snapshotSchema(): array
+    {
+        return [
+            'title' => ['label' => 'Title', 'type' => 'string'],
+            'status' => ['label' => 'Status', 'type' => 'enum'],
+            'start_date' => ['label' => 'Starts', 'type' => 'date'],
+            'end_date' => ['label' => 'Ends', 'type' => 'date'],
+            'details' => ['label' => 'Details', 'type' => 'text'],
+            'photo_url' => ['label' => 'Picture', 'type' => 'file'],
+        ];
+    }
 
+    public static function auditModule(): string
+    {
+        return 'Adverts';
+    }
+
+    public function auditTitle(): string
+    {
+        return (string) ($this->title ?: 'Advert #' . $this->id);
+    }
 }

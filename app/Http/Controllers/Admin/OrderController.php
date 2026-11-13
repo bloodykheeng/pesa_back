@@ -112,11 +112,11 @@ class OrderController extends Controller
             return response()->json(['message' => 'These have payments and cannot be deleted: #' . $paid->implode(', #') . '. Cancel them instead.'], 422);
         }
 
-        $count = DB::transaction(function () use ($ids) {
-            DB::table('order_products')->whereIn('order_id', $ids)->delete();
-
-            return Order::whereIn('id', $ids)->delete();
-        });
+        // One by one, so each deleted order (with its items) is kept in the audit trail;
+        // its items go with it (order_products cascades).
+        $orders = Order::whereIn('id', $ids)->get();
+        DB::transaction(fn () => $orders->each->delete());
+        $count = $orders->count();
 
         return response()->json(['message' => $count . ' order' . ($count === 1 ? '' : 's') . ' deleted.']);
     }

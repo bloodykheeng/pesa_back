@@ -43,3 +43,9 @@ Account emails go through `App\Services\AccountEmails`, all on the branded layou
 
 **Locally** mail goes to Laragon's Mailpit (`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`, inbox at http://localhost:8025).
 Production sends through MailDog (password in `deployment/contabo/mails maildog.txt`), 150 a day on the free plan.
+
+## Audit trail
+
+Every create, edit and delete of the main models, and every sign-in, is recorded in `activity_log`; admins read it
+at `/api/admin/audit-trail`. See [audit-trail.md](audit-trail.md). A missing record answers 404 with
+"This record no longer exists. It may have been deleted." (`bootstrap/app.php`), never the model class.
