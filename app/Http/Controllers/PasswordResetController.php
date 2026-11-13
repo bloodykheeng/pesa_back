@@ -114,6 +114,7 @@ class PasswordResetController extends Controller
         $user->save();
         $user->tokens()->delete(); // sign out every device that used the old password
         PasswordReset::where('email', $user->email)->delete();
+        app(\App\Services\AccountEmails::class)->passwordChanged($user, 'with a reset link');
 
         return $request->expectsJson()
             ? response()->json(['message' => 'Your password has been changed. You can sign in now.'])
@@ -128,7 +129,16 @@ class PasswordResetController extends Controller
 
         $reset = PasswordReset::where('token', $token)->first();
 
-        if (! $reset || Carbon::parse($reset->created_at)->lt(now()->subMinutes(self::LINK_MINUTES))) {
+        if (! $reset) {
+            return null;
+        }
+
+        // A welcome link carries its own expiry (7 days); a forgot-password link lasts LINK_MINUTES.
+        $expires = $reset->expires_at
+            ? Carbon::parse($reset->expires_at)
+            : Carbon::parse($reset->created_at)->addMinutes(self::LINK_MINUTES);
+
+        if ($expires->isPast()) {
             return null;
         }
 

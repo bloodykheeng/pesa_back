@@ -57,6 +57,7 @@ class AdminAuthTest extends AdminTestCase
         Mail::fake();
         $this->admin(['email' => 'boss@example.com']);
         $this->customer(['email' => 'shopper@example.com']);
+        $welcomeToken = \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token');
 
         $a = $this->postJson('/api/admin/auth/forgot-password', ['email' => 'boss@example.com'])->assertOk()->json('message');
         $b = $this->postJson('/api/admin/auth/forgot-password', ['email' => 'shopper@example.com'])->assertOk()->json('message');
@@ -65,7 +66,8 @@ class AdminAuthTest extends AdminTestCase
         $this->assertSame($a, $b);
         $this->assertSame($a, $c);
         $this->assertDatabaseHas('password_reset_tokens', ['email' => 'boss@example.com']);
-        $this->assertDatabaseMissing('password_reset_tokens', ['email' => 'shopper@example.com']);
+        // The customer's own welcome link is left alone: the admin's forgot-password is for staff only.
+        $this->assertSame($welcomeToken, \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token'));
     }
 
     public function test_customers_cannot_use_the_admin_api_and_editors_cannot_manage_accounts(): void

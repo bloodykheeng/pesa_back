@@ -4,7 +4,7 @@
 |--------------------------------------------------------------------------
 | Admin dashboard API: /api/admin/*
 |--------------------------------------------------------------------------
-| Used only by the Next.js admin (pesa_admin). Paged, filtered and sorted lists
+| Used only by the Next.js admin (pesa_nextjs_admin). Paged, filtered and sorted lists
 | (?page, per_page, sort, filter[...]), View endpoints, permission checks. Never
 | called by the mobile app, so these responses can change with the dashboard.
 | Updates are POST so forms can carry a photo (multipart).

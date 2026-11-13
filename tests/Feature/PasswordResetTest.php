@@ -24,7 +24,8 @@ class PasswordResetTest extends TestCase
 
     private function resetFor(string $email, string $token = 'valid-token-123', $createdAt = null): void
     {
-        PasswordReset::create(['email' => $email, 'token' => $token, 'created_at' => $createdAt ?? now()]);
+        // Replaces the welcome email's link, which a new account already has.
+        PasswordReset::updateOrCreate(['email' => $email], ['token' => $token, 'created_at' => $createdAt ?? now(), 'expires_at' => null]);
     }
 
     public function test_a_posted_user_id_without_a_token_cannot_change_a_password(): void

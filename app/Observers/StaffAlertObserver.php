@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Rings the staff bell when customers act in the app: an order, a package booking, a sign-up.
+ * Rings the staff bell when customers act in the app: an order, a package booking, a sign-up;
+ * and sends a customer who signed up the welcome email.
  * Runs after the app's own controllers save, so their responses are untouched; a failure here is
  * logged and never breaks the customer's request.
  */
@@ -35,6 +36,12 @@ class StaffAlertObserver
             };
         } catch (Throwable $e) {
             Log::warning('Staff alert failed: ' . $e->getMessage());
+        }
+
+        // A customer who signed up in the app gets the welcome email (accounts an admin makes get
+        // theirs from Admin\UserController, which knows the role).
+        if ($model instanceof User && ! UserController::$creatingFromAdmin) {
+            app(\App\Services\AccountEmails::class)->created($model);
         }
     }
 }

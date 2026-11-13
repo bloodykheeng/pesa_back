@@ -140,6 +140,7 @@ class AuthController extends Controller
 
         $user->forceFill(['password' => Hash::make($data['password'])])->save();
         $user->tokens()->where('id', '!=', $user->currentAccessToken()?->id)->delete();
+        app(\App\Services\AccountEmails::class)->passwordChanged($user, 'from your profile');
 
         return response()->json(['message' => 'Your password is changed. Other devices are signed out.']);
     }

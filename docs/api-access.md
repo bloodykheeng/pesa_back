@@ -26,3 +26,20 @@ mysql -uroot -e "CREATE DATABASE elevatepesa_test CHARACTER SET utf8mb4 COLLATE 
 ```
 
 `tests/Feature/ApiAccessTest.php` checks every group above, including that customers still reach each app route.
+
+## Emails
+
+| When | Email | Sent from |
+| --- | --- | --- |
+| An admin makes an account | Welcome, with a "choose your password" link valid 7 days (never the password) | `Admin\UserController::store` |
+| A customer signs up in the app | Welcome to Elevate Pesa (with a link to set a password, for Google sign-ups) | `StaffAlertObserver` (the app's routes are untouched) |
+| A password changes (profile, an admin, a reset link) | "Your password was changed", saying how | `AccountEmails::passwordChanged` |
+| An admin changes a role or makes an account inactive | "Your access changed"; an inactive account is signed out everywhere | `Admin\UserController::update` |
+| Forgot password | Reset link, 60 minutes | `PasswordResetController`, `Admin\AuthController` |
+| A message to customers | The message | `SendAdminNotification` (queued: run `php artisan queue:work`) |
+
+Account emails go through `App\Services\AccountEmails`, all on the branded layout
+`resources/views/emails/layouts/branded.blade.php`. A failed send is logged and never breaks the request.
+
+**Locally** mail goes to Laragon's Mailpit (`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`, inbox at http://localhost:8025).
+Production sends through MailDog (password in `deployment/contabo/mails maildog.txt`), 150 a day on the free plan.

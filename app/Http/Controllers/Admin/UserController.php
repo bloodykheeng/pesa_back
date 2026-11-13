@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\StoresPhotos;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AdminResource;
 use App\Models\User;
+use App\Services\AccountEmails;
 use App\Support\AdminList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -81,7 +82,9 @@ class UserController extends Controller
             return $user;
         });
 
-        return response()->json(['message' => $user->name . ' added.', 'data' => new AdminResource($user->load('roles'))], 201);
+        app(AccountEmails::class)->created($user, $request->user());
+
+        return response()->json(['message' => $user->name . ' added. We emailed them a link to choose their password.', 'data' => new AdminResource($user->load('roles'))], 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -93,6 +96,8 @@ class UserController extends Controller
             return response()->json(['message' => 'You cannot take away your own staff role.'], 422);
         }
 
+        $before = ['role' => $user->getRoleNames()->first(), 'status' => $user->status];
+
         DB::transaction(function () use ($user, $data, $request) {
             $user->forceFill($this->fields($data));
             if (! empty($data['password'])) {
@@ -102,6 +107,20 @@ class UserController extends Controller
             $user->save();
             $user->syncRoles([$data['role']]);
         });
+
+        // Tell them: a new password, a new role, an account switched off or on.
+        $emails = app(AccountEmails::class);
+        if (! empty($data['password'])) {
+            $emails->passwordChanged($user, 'by an administrator', $request->user());
+        }
+        $changes = array_filter([
+            'role' => $before['role'] !== $data['role'] ? [$before['role'], $data['role']] : null,
+            'status' => $before['status'] !== $data['status'] ? [$before['status'], $data['status']] : null,
+        ]);
+        $emails->accessChanged($user, $changes, $request->user());
+        if (($changes['status'][1] ?? null) === 'inactive') {
+            $user->tokens()->delete(); // an inactive account is signed out everywhere
+        }
 
         return response()->json(['message' => $user->name . ' saved.', 'data' => new AdminResource($user->load('roles'))]);
     }
