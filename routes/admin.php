@@ -34,6 +34,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth:sanctum', 'role:Admin|Editor'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+        Route::post('auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile');
+        Route::post('auth/password', [AuthController::class, 'changePassword'])->name('auth.password');
 
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('options', OptionsController::class)->name('options');

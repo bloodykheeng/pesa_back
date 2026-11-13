@@ -84,4 +84,20 @@ class AdminAuthTest extends AdminTestCase
     {
         $this->getJson('/api/admin/orders')->assertUnauthorized();
     }
+
+    public function test_staff_change_their_own_profile_and_password(): void
+    {
+        $editor = $this->editor();
+        $other = $editor->createToken('other-device');
+        Sanctum::actingAs($editor);
+
+        $this->postJson('/api/admin/auth/profile', ['name' => 'New Name', 'phone' => '256700000009'])->assertOk()->assertJsonPath('user.name', 'New Name');
+
+        $this->postJson('/api/admin/auth/password', ['current_password' => 'wrong', 'password' => 'brandnew1', 'password_confirmation' => 'brandnew1'])
+            ->assertStatus(422)->assertJsonValidationErrors('current_password');
+        $this->postJson('/api/admin/auth/password', ['current_password' => 'password', 'password' => 'brandnew1', 'password_confirmation' => 'brandnew1'])->assertOk();
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('brandnew1', $editor->fresh()->password));
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $other->accessToken->id]);
+    }
 }

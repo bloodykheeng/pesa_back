@@ -117,7 +117,7 @@ class SendAdminNotification implements ShouldQueue
 
         $notification->createdBy?->notify(new StaffAlert(
             'send', '"' . Str::limit($notification->title, 40) . '" sent', implode(', ', $parts) . '.',
-            '/dashboard/notifications?view=' . $notification->id,
+            '/dashboard/messages?view=' . $notification->id,
         ));
     }
 

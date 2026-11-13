@@ -30,7 +30,7 @@ class StaffAlertObserver
                     '/dashboard/packages?view=' . $model->id),
                 $model instanceof User && ! UserController::$creatingFromAdmin => StaffAlert::toStaff('customer', 'New customer',
                     $model->name . ' signed up' . ($model->phone ? ' (' . $model->phone . ')' : ''),
-                    '/dashboard/customers?view=' . $model->id),
+                    '/dashboard/users?view=' . $model->id),
                 default => null,
             };
         } catch (Throwable $e) {

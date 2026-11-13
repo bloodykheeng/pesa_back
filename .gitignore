@@ -60,3 +60,5 @@ yarn-error.log
 .vercel
 
 .vercel
+/public/ad_photos/*
+/public/inventory_type_photos/*

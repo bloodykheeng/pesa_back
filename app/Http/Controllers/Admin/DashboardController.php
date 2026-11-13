@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 /**
  * GET /api/admin/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -99,8 +100,8 @@ class DashboardController extends Controller
             'top_products' => $topProducts,
             'top_customers' => $topCustomers,
             'data_range' => [
-                'first_order' => Order::min('created_at'),
-                'last_order' => Order::max('created_at'),
+                'first_order' => ($first = Order::min('created_at')) ? Carbon::parse($first)->toIso8601String() : null,
+                'last_order' => ($last = Order::max('created_at')) ? Carbon::parse($last)->toIso8601String() : null,
             ],
         ]);
     }

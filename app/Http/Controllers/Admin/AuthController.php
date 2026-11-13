@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
  */
 class AuthController extends Controller
 {
+    use Concerns\StoresPhotos;
+
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -103,6 +105,43 @@ class AuthController extends Controller
         ]], fn ($message) => $message->to($user->email)->subject('Reset your Elevate Pesa admin password'));
 
         return $answer;
+    }
+
+    /** POST /api/admin/auth/profile: your own name, phone and photo. */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => ['nullable', 'string', 'max:20', \Illuminate\Validation\Rule::unique('users', 'phone')->ignore($user->id)],
+            'photo' => self::PHOTO_RULE,
+            'remove_photo' => 'nullable|boolean',
+        ]);
+
+        $user->forceFill(['name' => $data['name'], 'phone' => $data['phone'] ?? null]);
+        $this->applyPhoto($request, $user, 'user_photos');
+        $user->save();
+
+        return response()->json(['message' => 'Your profile is saved.', 'user' => $this->profile($user->fresh())]);
+    }
+
+    /** POST /api/admin/auth/password: your own password; every other session is signed out. */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $data = $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed|different:current_password',
+        ]);
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages(['current_password' => 'That is not your current password.']);
+        }
+
+        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+        $user->tokens()->where('id', '!=', $user->currentAccessToken()?->id)->delete();
+
+        return response()->json(['message' => 'Your password is changed. Other devices are signed out.']);
     }
 
     private function profile(User $user): array
