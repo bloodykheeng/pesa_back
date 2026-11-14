@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\AdminResource;
 use App\Models\Product;
 use App\Support\AdminList;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +41,8 @@ class ProductController extends Controller
                 AllowedFilter::exact('inventory_types_id'),
                 AllowedFilter::exact('product_types_id'),
                 AllowedFilter::exact('category_brands_id'),
+                // A gas & water category: the products of its brands (the order form's product finder, the filters).
+                AllowedFilter::callback('product_category', fn (Builder $q, $id) => $q->whereHas('categoryBrand', fn (Builder $b) => $b->where('product_categories_id', $id))),
                 AllowedFilter::exact('electronic_category_id'),
                 AllowedFilter::exact('electronic_brand_id'),
                 AllowedFilter::exact('electronic_type_id'),

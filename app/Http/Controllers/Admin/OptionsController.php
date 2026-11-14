@@ -29,7 +29,7 @@ class OptionsController extends Controller
             'product_categories' => $pick(ProductCategory::class),
             'category_brands' => $pick(CategoryBrand::class, ['product_categories_id']),
             'product_types' => $pick(ProductType::class),
-            'inventory_types' => $pick(InventoryType::class),
+            'inventory_types' => $this->inventoryTypes(),
             'electronic_categories' => $pick(ElectronicCategory::class),
             'electronic_brands' => $pick(ElectronicBrand::class, ['electronic_categories_id']),
             'electronic_types' => $pick(ElectronicType::class, ['electronic_brands_id']),
@@ -44,5 +44,26 @@ class OptionsController extends Controller
             'payment_methods' => AdminPayments::METHODS,
             'payment_modes' => OrderController::PAYMENT_MODES,
         ]);
+    }
+
+    /**
+     * Inventory types with the side of the catalogue they hold (`side`: gas_water or electronics), so a filter or form
+     * shows only that side's categories, brands and series once one is picked. Read from the products filed under it
+     * (gas & water ones have a brand, electronics ones an electronics category); the name decides for a type with none.
+     */
+    private function inventoryTypes()
+    {
+        $sides = \App\Models\Product::query()
+            ->selectRaw('inventory_types_id, max(category_brands_id is not null) as gas, max(electronic_category_id is not null) as electronics')
+            ->whereNotNull('inventory_types_id')->groupBy('inventory_types_id')->get()->keyBy('inventory_types_id');
+
+        return InventoryType::orderBy('name')->get(['id', 'name', 'status'])->map(function ($type) use ($sides) {
+            $s = $sides[$type->id] ?? null;
+            $type->side = $s && $s->electronics && ! $s->gas ? 'electronics'
+                : ($s && $s->gas && ! $s->electronics ? 'gas_water'
+                : (preg_match('/electronic/i', $type->name) ? 'electronics' : 'gas_water'));
+
+            return $type;
+        });
     }
 }

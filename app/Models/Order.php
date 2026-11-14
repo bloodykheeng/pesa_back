@@ -67,7 +67,7 @@ class Order extends Model implements HasSnapshotSchema
     }
 
     /** What an order can be narrowed to by its items: an order matches when any of its items does. */
-    public const ITEM_FILTERS = ['product', 'inventory_type', 'product_category', 'electronic_category'];
+    public const ITEM_FILTERS = ['product', 'inventory_type', 'product_category', 'category_brand', 'product_type', 'electronic_category', 'electronic_brand', 'electronic_type'];
 
     /** The order's own fields the dashboard narrows by. */
     public const STATUS_FILTERS = ['delivery_status', 'payment_status', 'payment_mode'];
@@ -100,10 +100,14 @@ class Order extends Model implements HasSnapshotSchema
         return $line
             ->when($items['product'] ?? null, fn ($q, $id) => $q->where('order_products.product_id', $id))
             ->when(
-                array_intersect_key($items, array_flip(['inventory_type', 'product_category', 'electronic_category'])),
+                array_intersect_key($items, array_flip(['inventory_type', 'product_category', 'category_brand', 'product_type', 'electronic_category', 'electronic_brand', 'electronic_type'])),
                 fn ($q) => $q->whereHas('product', fn (Builder $p) => $p
                     ->when($items['inventory_type'] ?? null, fn ($w, $id) => $w->where('inventory_types_id', $id))
+                    ->when($items['category_brand'] ?? null, fn ($w, $id) => $w->where('category_brands_id', $id))
+                    ->when($items['product_type'] ?? null, fn ($w, $id) => $w->where('product_types_id', $id))
                     ->when($items['electronic_category'] ?? null, fn ($w, $id) => $w->where('electronic_category_id', $id))
+                    ->when($items['electronic_brand'] ?? null, fn ($w, $id) => $w->where('electronic_brand_id', $id))
+                    ->when($items['electronic_type'] ?? null, fn ($w, $id) => $w->where('electronic_type_id', $id))
                     ->when($items['product_category'] ?? null, fn ($w, $id) => $w->whereHas('categoryBrand', fn ($b) => $b->where('product_categories_id', $id)))),
             );
     }
