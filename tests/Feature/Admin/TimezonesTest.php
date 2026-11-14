@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 
 /**
- * The timezone rules (docs/timezones.md): UTC stored and queried, a day is the Kampala day, a time is used exactly.
- * The ad test reads raw stored values: in the test database they are written and read under the same session zone.
- * Kampala is UTC+3: its day runs 21:00:00 to 20:59:59 UTC.
+ * The timezone rules (docs/timezones.md): UTC stored and queried, a day is the Kampala day, a time is used exactly. * Kampala is UTC+3: its day runs 21:00:00 to 20:59:59 UTC.
  */
 class TimezonesTest extends AdminTestCase
 {
@@ -19,6 +17,12 @@ class TimezonesTest extends AdminTestCase
     {
         Carbon::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_the_database_session_is_utc_whatever_the_server_zone(): void
+    {
+        // Contabo's MySQL runs on Europe/Berlin and the laptop's on Kampala: the connection must be UTC on both.
+        $this->assertSame('+00:00', DB::selectOne('select @@session.time_zone as z')->z);
     }
 
     public function test_a_bare_day_is_the_whole_kampala_day_and_a_time_is_used_exactly(): void

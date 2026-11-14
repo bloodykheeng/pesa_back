@@ -53,6 +53,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // UTC session on every server: MySQL converts TIMESTAMP columns (every created_at) with the session zone,
+            // which defaults to the server's. Contabo runs Europe/Berlin, so rows moved from Hostinger (UTC) read 1-2
+            // hours late without this, and Berlin's DST hour rejects some writes (docs/timezones.md).
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // Pdo\Mysql::ATTR_SSL_CA from PHP 8.4 (the old name is deprecated); production runs 8.3.
@@ -74,6 +78,7 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // Pdo\Mysql::ATTR_SSL_CA from PHP 8.4 (the old name is deprecated); production runs 8.3.

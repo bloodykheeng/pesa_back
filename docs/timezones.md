@@ -53,24 +53,58 @@ What each client sends:
   If the app ever sends a time, it must be `t.toUtc().toIso8601String()` (NICE's app sent local time without the
   offset, 3 hours off).
 
-## The MySQL session timezone: leave it alone
+## The MySQL session is pinned to UTC (the standard)
 
-No `timezone` in `config/database.php`, as in Alpha and Letshego (decided 14 Nov 2026; a pin was added that morning
-and removed the same day as needless). Why that is safe:
+`config/database.php` sets `'timezone' => env('DB_TIMEZONE', '+00:00')` on the mysql and mariadb connections, so every
+read and write is in UTC whatever the server's zone. Decided 14 Nov 2026 after the proof below; the house standard for
+every Laravel + MySQL project (coding note `dates-and-timezones-with-an-ai-agent.md`, trap 7).
 
-- MySQL converts a `TIMESTAMP` (every `created_at`, `lastlogin`) from the session zone to UTC on write and back on
-  read; `DATETIME` is never converted. **Written and read on the same server, a `TIMESTAMP` round-trips exactly,
-  whatever that server's zone.** Proof: Alpha (no pin, MySQL on Kampala time) has `notifications.start_date`
-  (`DATETIME`) written with `created_at`; read as Alpha reads them, all 136 rows agree.
-- It goes wrong only when data is **written under one zone and read under another**: a database copied between servers
-  set to different zones. Elevate's local database is a copy of production (written under UTC) read on a laptop whose
-  MySQL runs on Kampala time, so on this laptop the copied rows show 3 hours late (`00:55` for a sign-up at `21:55`
-  UTC). Local only; ignore it, or test against data written on the laptop.
-- `APP_TIMEZONE=UTC` is PHP's clock only; Laravel sets MySQL's session zone only when a connection has a `timezone`
-  key. A 3-hour gap on a laptop: first ask where the rows were written (a production copy?), never add config for it.
-- **Check once** that the Contabo MySQL runs on UTC like the old Hostinger one (`timedatectl`;
-  `mysql -e "select @@global.time_zone, @@system_time_zone"`). If the two servers' zones differed, the rows copied from
-  Hostinger are 3 hours off on the live site and need converting once; adding a pin would not be the fix.
+How MySQL behaves ([MySQL 8.4 manual](https://dev.mysql.com/doc/refman/8.4/en/datetime.html)):
+
+- A `TIMESTAMP` (every `created_at`, `lastlogin`) is converted from the session zone to UTC on write and back on read;
+  the session zone defaults to the **server's**. A `DATETIME` is never converted.
+- `APP_TIMEZONE=UTC` is PHP's clock only; Laravel sets MySQL's session zone only when the connection has `timezone`.
+- mysqldump writes `TIMESTAMP`s in UTC (`--tz-utc`, on by default), so a move keeps the stored values; what changes is
+  the zone the new server READS them in.
+
+What it does on Elevate (checked on the server, read-only, 14 Nov 2026):
+
+- **Contabo runs `Europe/Berlin`** (`timedatectl`; MySQL `@@system_time_zone` = CET), not UTC. Hostinger wrote in UTC.
+- So the live API reads every row moved from Hostinger **1 hour late (winter rows) or 2 hours late (summer rows)**:
+  order `RMPH3AXKU7` is `19:10:17` UTC (the local copy and the server under `+00:00` agree) and the live app reads
+  `20:10:17`; the FAQ "How does ElevatePesa work…" is `07:38:48` UTC and the live admin shows "Oct 2, 2024 12:38 PM"
+  (10:38 in Kampala is right). Rows written on Contabo read right (the FAQ created at 2:58 pm showed 2:58 pm),
+  because they were written and read in the same zone: the data is mixed.
+- Berlin has summer time: in the hour its clocks jump forward, MySQL rejects some UTC times Laravel writes
+  ("Incorrect datetime value"), and the hour they fall back is ambiguous. UTC has neither.
+- On a laptop whose MySQL runs on Kampala time, a production copy reads right with the pin.
+
+### Deploying it to Contabo (once)
+
+Rows the live app wrote on Contabo since the import (13 Nov 2026 12:40 UTC) were stored in Berlin time; with the pin
+they would read 1 hour early, so move them once, in the same deploy. On 14 Nov 2026 they were: `faqs` 1 row (the
+"tetsing" test FAQ: delete it instead) and `personal_access_tokens` 2 rows (`created_at`, `updated_at`, `last_used_at`).
+
+1. List them again just before deploying (read-only), on the server:
+
+   ```sh
+   mysql -N -e "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='elevatepesa' AND data_type='timestamp'" |
+   while read t c; do n=$(mysql -N -e "SET time_zone='+00:00'; SELECT COUNT(*) FROM \`$t\` WHERE \`$c\` >= '2026-11-13 12:40:00'" elevatepesa); [ "$n" != 0 ] && echo "$t.$c: $n"; done
+   ```
+
+2. For each column listed, in the same deploy (written in CET, UTC+1, until 28 Mar 2027):
+
+   ```sql
+   SET time_zone = '+00:00';
+   UPDATE personal_access_tokens SET created_at = created_at + INTERVAL 1 HOUR WHERE created_at >= '2026-11-13 12:40:00';
+   -- the same for each column listed
+   ```
+
+3. Check through the app: `select @@session.time_zone` gives `+00:00`, and order `RMPH3AXKU7` reads `19:10:17`.
+
+Until it is deployed, the live site shows the moved rows 1 to 2 hours late. Setting the server's MySQL to UTC
+(`default-time-zone='+00:00'` in `/etc/mysql/mysql.conf.d/mysqld.cnf`, then a restart) would fix the live site at once,
+with the same one-time move of the Contabo-written rows.
 
 ## What was fixed on 14 Nov 2026
 
@@ -93,7 +127,7 @@ and removed the same day as needless). Why that is safe:
   by putting the old code back: it named every bug above that a GET reaches (the old API's statistics, charts,
   orders, ads and packages; the new admin's lists and dashboard on an ISO date). **If it fails, fix
   the code; only a real `date` column goes in `CALENDAR_COLUMNS`.**
-- `tests/Feature/Admin/TimezonesTest.php`: bare days and exact times; an order at 01:30 on
+- `tests/Feature/Admin/TimezonesTest.php`: the session is UTC; bare days and exact times; an order at 01:30 on
   1 March in Kampala counts in March; the old API's days; an ad's raw stored values and its last day.
 - The new admin: `npm run check:dates` finds a clock read when a file loads (a form default frozen at the first
   import), Luxon's `DateTime.now()` included.
