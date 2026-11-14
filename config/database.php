@@ -53,10 +53,6 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            // The session in UTC whatever the server's clock. MySQL converts TIMESTAMP columns (every created_at) with
-            // the session zone on write and read; data written under one zone and read under another (a production
-            // copy on a laptop on Kampala time) is 3 hours off. Check the server first: docs/timezones.md.
-            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // Pdo\Mysql::ATTR_SSL_CA from PHP 8.4 (the old name is deprecated); production runs 8.3.
@@ -78,7 +74,6 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'timezone' => env('DB_TIMEZONE', '+00:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 // Pdo\Mysql::ATTR_SSL_CA from PHP 8.4 (the old name is deprecated); production runs 8.3.

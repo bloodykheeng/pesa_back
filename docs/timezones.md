@@ -53,29 +53,22 @@ What each client sends:
   If the app ever sends a time, it must be `t.toUtc().toIso8601String()` (NICE's app sent local time without the
   offset, 3 hours off).
 
-## The MySQL session is pinned to UTC
+## The MySQL session timezone: leave it alone
 
-`config/database.php` sets `'timezone' => env('DB_TIMEZONE', '+00:00')` on the mysql and mariadb connections.
-
-What it does and does not fix (checked 14 Nov 2026 against the MySQL manual and the data):
+No `timezone` in `config/database.php`, as in Alpha and Letshego (decided 14 Nov 2026; a pin was added that morning
+and removed the same day as needless). Why that is safe:
 
 - MySQL converts a `TIMESTAMP` (every `created_at`, `lastlogin`) from the session zone to UTC on write and back on
-  read; `DATETIME` is never converted. **Written and read under the same zone, a `TIMESTAMP` round-trips exactly**,
-  whatever that zone is. Proof: Alpha (no pin, MySQL on Kampala time) has `notifications.start_date` (`DATETIME`)
-  written with `created_at`; under its own zone all 136 rows agree, under a forced `+00:00` none do. Alpha and
-  Letshego are correct as they are, and pinning them would shift their existing rows.
-- **The error comes when the write zone and the read zone differ**: data moved between servers set to different
-  zones (a mysqldump stores `TIMESTAMP`s in UTC), or a server whose zone changes. Elevate's local database is a copy of
-  production (written under UTC) read on a laptop whose MySQL runs on Kampala time: the same user row reads
-  `created_at=2025-11-05 00:55:00` under `SYSTEM` and the true `2025-11-04 21:55:00` under `+00:00`.
-- The pin makes every read and write UTC, so moving the data (the Hostinger to Contabo migration, a production copy on
-  a laptop) no longer matters. The cost: rows written earlier under a non-UTC session read shifted once it is on. On
-  this laptop that is the rows written here since the copy (test and e2e activity); on production it would be the
-  rows written since the migration **if** the Contabo MySQL is not on UTC.
-
-**Before deploying it**: on the server, `timedatectl` and `mysql -e "select @@global.time_zone, @@system_time_zone"`.
-UTC: the pin changes nothing there and is safe. Anything else: rows written on Contabo since the migration were stored
-under that zone; decide before deploying (remove the pin, or convert those rows).
+  read; `DATETIME` is never converted. **Written and read on the same server, a `TIMESTAMP` round-trips exactly,
+  whatever that server's zone.** Proof: Alpha (no pin, MySQL on Kampala time) has `notifications.start_date`
+  (`DATETIME`) written with `created_at`; read as Alpha reads them, all 136 rows agree.
+- It goes wrong only when data is **written under one zone and read under another**: a database copied between servers
+  set to different zones. Elevate's local database is a copy of production (written under UTC) read on a laptop whose
+  MySQL runs on Kampala time, so on this laptop the copied rows show 3 hours late (`00:55` for a sign-up at `21:55`
+  UTC). Local only; ignore it, or test against data written on the laptop.
+- **Check once** that the Contabo MySQL runs on UTC like the old Hostinger one (`timedatectl`;
+  `mysql -e "select @@global.time_zone, @@system_time_zone"`). If the two servers' zones differed, the rows copied from
+  Hostinger are 3 hours off on the live site and need converting once; adding a pin would not be the fix.
 
 ## What was fixed on 14 Nov 2026
 
@@ -98,7 +91,7 @@ under that zone; decide before deploying (remove the pin, or convert those rows)
   by putting the old code back: it named every bug above that a GET reaches (the old API's statistics, charts,
   orders, ads and packages; the new admin's lists and dashboard on an ISO date). **If it fails, fix
   the code; only a real `date` column goes in `CALENDAR_COLUMNS`.**
-- `tests/Feature/Admin/TimezonesTest.php`: the session is UTC; bare days and exact times; an order at 01:30 on
+- `tests/Feature/Admin/TimezonesTest.php`: bare days and exact times; an order at 01:30 on
   1 March in Kampala counts in March; the old API's days; an ad's raw stored values and its last day.
 - The new admin: `npm run check:dates` finds a clock read when a file loads (a form default frozen at the first
   import), Luxon's `DateTime.now()` included.
