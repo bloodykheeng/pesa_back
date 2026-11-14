@@ -42,7 +42,7 @@ class OptionsController extends Controller
             'package_payment_statuses' => PackageController::PAYMENT_STATUSES,
             'package_delivery_statuses' => PackageController::DELIVERY_STATUSES,
             'payment_methods' => AdminPayments::METHODS,
-            'payment_modes' => ['bnpl', 'cod'],
+            'payment_modes' => OrderController::PAYMENT_MODES,
         ]);
     }
 }

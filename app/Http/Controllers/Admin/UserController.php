@@ -28,6 +28,22 @@ class UserController extends Controller
     /** Set while an admin creates an account, so the "new sign-up" bell is not rung for it. */
     public static bool $creatingFromAdmin = false;
 
+    /**
+     * GET /api/admin/customers: customers to pick from when staff enter an order or a package (Editors too, so
+     * only what the picker shows: name, phone, email). The full Customers list stays with Admins.
+     */
+    public function customers(Request $request)
+    {
+        $query = QueryBuilder::for(User::class)
+            ->role('Customer')
+            ->select(['id', 'name', 'phone', 'email'])
+            ->allowedFilters([AdminList::search(['name', 'email', 'phone'])])
+            ->allowedSorts(['name', 'created_at'])
+            ->defaultSort('name');
+
+        return AdminResource::collection(AdminList::paginate($query, $request));
+    }
+
     public function index(Request $request)
     {
         $query = QueryBuilder::for(User::class)

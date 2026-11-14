@@ -54,6 +54,12 @@ class Order extends Model implements HasSnapshotSchema
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** The staff member who entered it from the dashboard; null when the customer placed it in the app. */
+    public function enteredBy()
+    {
+        return $this->belongsTo(User::class, 'entered_by');
+    }
+
     /** What an order can be narrowed to by its items: an order matches when any of its items does. */
     public const ITEM_FILTERS = ['product', 'inventory_type', 'product_category', 'electronic_category'];
 
@@ -110,6 +116,7 @@ class Order extends Model implements HasSnapshotSchema
             'charged_amount' => ['label' => 'Charged', 'type' => 'money'],
             'amount_paid' => ['label' => 'Paid', 'type' => 'money'],
             'balance_due' => ['label' => 'Balance due', 'type' => 'money'],
+            'entered_by' => ['label' => 'Entered from the dashboard by', 'type' => 'relation', 'resolve' => Snapshot::nameOf(User::class)],
             'items' => [
                 'label' => 'Items', 'type' => 'list',
                 'columns' => [['key' => 'name', 'label' => 'Product'], ['key' => 'quantity', 'label' => 'Qty', 'type' => 'number'], ['key' => 'price', 'label' => 'Price', 'type' => 'money']],

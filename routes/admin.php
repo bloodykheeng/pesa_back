@@ -49,12 +49,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Orders and packages
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('orders/bulk-delete', [OrderController::class, 'destroyMany'])->name('orders.bulk-delete');
+        Route::post('orders', [OrderController::class, 'store'])->name('orders.store');
         Route::get('orders/{id}', [OrderController::class, 'show'])->whereNumber('id')->name('orders.show');
         Route::post('orders/{id}', [OrderController::class, 'update'])->whereNumber('id')->name('orders.update');
         Route::post('orders/{id}/payments', [OrderController::class, 'recordPayment'])->whereNumber('id')->name('orders.payments');
 
         Route::get('packages', [PackageController::class, 'index'])->name('packages.index');
         Route::post('packages/bulk-delete', [PackageController::class, 'destroyMany'])->name('packages.bulk-delete');
+        Route::post('packages', [PackageController::class, 'store'])->name('packages.store');
         Route::get('packages/{id}', [PackageController::class, 'show'])->whereNumber('id')->name('packages.show');
         Route::post('packages/{id}', [PackageController::class, 'update'])->whereNumber('id')->name('packages.update');
         Route::post('packages/{id}/payments', [PackageController::class, 'recordPayment'])->whereNumber('id')->name('packages.payments');
@@ -82,6 +84,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // One account: Editors too, for a customer opened over an order or payment (the controller keeps staff
         // accounts to Admins).
+        // Customers to pick when staff enter an order or a package (Editors too): name, phone, email only.
+        Route::get('customers', [UserController::class, 'customers'])->name('customers.index');
         Route::get('users/{id}', [UserController::class, 'show'])->whereNumber('id')->name('users.show');
 
         // Admins only: accounts, roles, messages to customers, the audit trail

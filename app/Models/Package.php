@@ -64,6 +64,12 @@ class Package extends Model implements HasSnapshotSchema
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** The staff member who entered it from the dashboard; null when the customer placed it in the app. */
+    public function enteredBy()
+    {
+        return $this->belongsTo(User::class, 'entered_by');
+    }
+
     /** How the audit trail describes this record (docs/audit-trail.md). */
     public static function snapshotSchema(): array
     {
@@ -81,6 +87,7 @@ class Package extends Model implements HasSnapshotSchema
             'amount_paid' => ['label' => 'Paid', 'type' => 'money'],
             'balance_due' => ['label' => 'Balance due', 'type' => 'money'],
             'photo_url' => ['label' => 'Photo', 'type' => 'file'],
+            'entered_by' => ['label' => 'Entered from the dashboard by', 'type' => 'relation', 'resolve' => Snapshot::nameOf(User::class)],
             'order_number' => ['label' => 'Order number', 'type' => 'string'],
         ];
     }

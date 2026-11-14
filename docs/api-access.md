@@ -58,6 +58,17 @@ at `/api/admin/audit-trail`. See [audit-trail.md](audit-trail.md). A missing rec
 matches when any of its items does), so a figure and its list agree. `GET /api/admin/users/{id}` is open to Editors
 for customer accounts (an order's customer); staff accounts stay Admin-only.
 
+## Orders and packages entered by staff
+
+Admins and Editors can enter what a customer did not place in the app (re-entering what the Hostinger loss took, or a
+phone order): `POST /api/admin/orders` (customer, items with quantity and price, address, payment mode, statuses,
+`deduct_stock`) and `POST /api/admin/packages`. Both take `placed_at` (Kampala wall-clock or an instant, never in the
+future; empty = now) and become the record's `created_at`; `created_by` stays the customer and `entered_by` holds the
+staff member (null = placed in the app). Nothing is paid yet, the app's BNPL rule holds, and nobody is pushed or
+emailed. A payment (`POST .../{id}/payments`) takes an optional `paid_at` for an earlier date: dated then, never before
+the order, and no push. `GET /api/admin/customers` (Editors too) feeds the customer picker with name, phone and email
+only. Tests: `tests/Feature/Admin/EnteredByStaffTest.php`.
+
 ## Dates
 
 Every date filter (`filter[from]` / `filter[to]`, the dashboard's `from` / `to`, the old API's `startDate` / `endDate`,

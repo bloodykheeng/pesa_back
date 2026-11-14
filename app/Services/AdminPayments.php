@@ -16,6 +16,9 @@ use Throwable;
  * Payments staff record against an order or a package, and the push message the customer gets.
  * Mirrors the app-era rules (PaymentController::makePayment): amount_paid grows, balance_due is
  * charged - paid, and a balance of 0 marks it paid.
+ *
+ * `paid_at` (a UTC CarbonImmutable, or null): a payment re-entered for an earlier date is dated then, may not be
+ * older than the order or package itself, and sends no push (the customer was told at the time, or never needs to be).
  */
 class AdminPayments
 {
@@ -26,6 +29,7 @@ class AdminPayments
         return DB::transaction(function () use ($order, $data, $staff) {
             $order = Order::lockForUpdate()->findOrFail($order->id);
             $this->guardAmount((float) $data['amount'], (float) $order->balance_due);
+            $this->guardDate($data['paid_at'] ?? null, $order->created_at);
 
             $payment = Payment::forceCreate([
                 'order_id' => $order->id,
@@ -36,6 +40,7 @@ class AdminPayments
                 'details' => $data['details'] ?? null,
                 'created_by' => $staff->id,
                 'updated_by' => $staff->id,
+                ...(! empty($data['paid_at']) ? ['created_at' => $data['paid_at'], 'updated_at' => now()] : []),
             ]);
 
             $order->amount_paid = (float) $order->amount_paid + (float) $data['amount'];
@@ -47,7 +52,9 @@ class AdminPayments
             $order->updated_by = $staff->id;
             $order->save();
 
-            DB::afterCommit(fn () => $this->push($order->created_by, 'Payment received', 'We received ' . number_format((float) $data['amount']) . ' UGX for order #' . $order->order_number . '.'));
+            if (empty($data['paid_at'])) {
+                DB::afterCommit(fn () => $this->push($order->created_by, 'Payment received', 'We received ' . number_format((float) $data['amount']) . ' UGX for order #' . $order->order_number . '.'));
+            }
 
             return $payment;
         });
@@ -58,6 +65,7 @@ class AdminPayments
         return DB::transaction(function () use ($package, $data, $staff) {
             $package = Package::lockForUpdate()->findOrFail($package->id);
             $this->guardAmount((float) $data['amount'], (float) $package->balance_due);
+            $this->guardDate($data['paid_at'] ?? null, $package->created_at);
 
             $payment = PackagePayment::forceCreate([
                 'package_id' => $package->id,
@@ -68,6 +76,7 @@ class AdminPayments
                 'details' => $data['details'] ?? null,
                 'created_by' => $staff->id,
                 'updated_by' => $staff->id,
+                ...(! empty($data['paid_at']) ? ['created_at' => $data['paid_at'], 'updated_at' => now()] : []),
             ]);
 
             $package->amount_paid = (float) $package->amount_paid + (float) $data['amount'];
@@ -78,7 +87,9 @@ class AdminPayments
             $package->updated_by = $staff->id;
             $package->save();
 
-            DB::afterCommit(fn () => $this->push($package->created_by, 'Payment received', 'We received ' . number_format((float) $data['amount']) . ' UGX for package #' . ($package->package_number ?: $package->order_number) . '.'));
+            if (empty($data['paid_at'])) {
+                DB::afterCommit(fn () => $this->push($package->created_by, 'Payment received', 'We received ' . number_format((float) $data['amount']) . ' UGX for package #' . ($package->package_number ?: $package->order_number) . '.'));
+            }
 
             return $payment;
         });
@@ -100,6 +111,13 @@ class AdminPayments
             Log::warning('Push to user ' . $userId . ' failed: ' . $e->getMessage());
 
             return false;
+        }
+    }
+
+    private function guardDate(?\DateTimeInterface $paidAt, ?\DateTimeInterface $placedAt): void
+    {
+        if ($paidAt && $placedAt && $paidAt < $placedAt) {
+            throw ValidationException::withMessages(['paid_at' => 'Before it was placed: check the date.']);
         }
     }
 
