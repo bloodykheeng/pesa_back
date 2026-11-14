@@ -169,7 +169,7 @@ class PackageController extends Controller
 
         try {
             if (isset($user->device_token)) {
-                $this->firebaseService->sendNotification(
+                \App\Support\Push::send(
                     $user->device_token,
                     'New Package Order',
                     'Package order #' . $packageNumber . ' has been created successfully'
@@ -188,9 +188,7 @@ class PackageController extends Controller
         $admins = User::role('Admin')->get();
         foreach ($admins as $admin) {
             if ($admin->email) {
-                Mail::send('emails.newPackageOrderAdmin', ['package' => $package], function ($message) use ($admin) {
-                    $message->to($admin->email)->subject('New Package Order Submitted');
-                });
+                Mail::to($admin->email)->send(new \App\Mail\ViewMail('emails.newPackageOrderAdmin', ['package' => $package], 'New Package Order Submitted'));
             }
         }
 
@@ -248,22 +246,22 @@ class PackageController extends Controller
         if (isset($user->device_token)) {
             if ($package->status === 'processing' || $package->delivery_status === 'processing') {
 
-                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
+                \App\Support\Push::send($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being processed');
             }
 
             if ($package->status === 'transit' || $package->delivery_status === 'transit') {
 
-                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
+                \App\Support\Push::send($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being transported');
             }
 
             if ($package->status === 'delivered' || $package->delivery_status === 'delivered') {
 
-                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
+                \App\Support\Push::send($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' has been delivered');
             }
 
             if ($package->status === 'cancelled' || $package->delivery_status === 'cancelled') {
 
-                $this->firebaseService->sendNotification($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
+                \App\Support\Push::send($user->device_token, 'Package Status ', 'Your package order# ' . $package->package_number . ' is being cancelled');
             }
         }
 
@@ -301,7 +299,7 @@ class PackageController extends Controller
         try {
 
         if (isset($user->device_token)) {
-            $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
+            \App\Support\Push::send($user->device_token, 'Order Cancellation ', 'Package Order# ' . $package->package_number . ' has been cancelled.');
         }
 
     }catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
@@ -337,7 +335,7 @@ class PackageController extends Controller
 
         try {
         if (isset($user->device_token)) {
-            $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
+            \App\Support\Push::send($user->device_token, 'Receipt Confirmation ', 'Package# ' . $package->package_number . ' has been received.');
         }
 
     }catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {

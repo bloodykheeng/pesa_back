@@ -148,7 +148,7 @@ class PackagePaymentController extends Controller
             $user = User::find($validated['user_id']);
             try {
                 if (isset($user->device_token)) {
-                    $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
+                    \App\Support\Push::send($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for Package #" . $package->Package_number . " has been received.");
                 }
             } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
                 // Log the error for debugging purposes

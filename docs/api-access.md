@@ -36,10 +36,18 @@ mysql -uroot -e "CREATE DATABASE elevatepesa_test CHARACTER SET utf8mb4 COLLATE 
 | A password changes (profile, an admin, a reset link) | "Your password was changed", saying how | `AccountEmails::passwordChanged` |
 | An admin changes a role or makes an account inactive | "Your access changed"; an inactive account is signed out everywhere | `Admin\UserController::update` |
 | Forgot password | Reset link, 60 minutes | `PasswordResetController`, `Admin\AuthController` |
-| A message to customers | The message | `SendAdminNotification` (queued: run `php artisan queue:work`) |
+| A message to customers | The message | `SendAdminNotification` |
+
+**Every email and every push message is queued** (the account mailables and `App\Mail\ViewMail` implement
+`ShouldQueue`; pushes go through `App\Support\Push` → `App\Jobs\SendPush`, after the commit), so signing up,
+placing an order or recording a payment answers at once instead of waiting on MailDog or Firebase. A worker must run
+(`php artisan queue:work`, Supervisor on the server); Settings › Queues shows what waits and what failed, with Retry.
+The audit trail is not queued: it is written after the response has gone (`app()->terminating`), so it costs the
+user nothing and keeps the request's device and IP.
 
 Account emails go through `App\Services\AccountEmails`, all on the branded layout
-`resources/views/emails/layouts/branded.blade.php`. A failed send is logged and never breaks the request.
+`resources/views/emails/layouts/branded.blade.php`. A failed send is retried by the queue and ends in Settings ›
+Queues › Failed; it never breaks the request.
 
 **Locally** mail goes to Laragon's Mailpit (`MAIL_HOST=127.0.0.1`, `MAIL_PORT=1025`, inbox at http://localhost:8025).
 Production sends through MailDog (password in `deployment/contabo/mails maildog.txt`), 150 a day on the free plan.

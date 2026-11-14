@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PackageController;
 use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\QueueController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +107,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');
             Route::get('audit-trail/{id}', [AuditTrailController::class, 'show'])->whereNumber('id')->name('audit-trail.show');
+
+            // Background work: waiting and failed jobs (Settings > Queues)
+            Route::get('queues/stats', [QueueController::class, 'stats'])->name('queues.stats');
+            Route::get('queues/jobs', [QueueController::class, 'jobs'])->name('queues.jobs');
+            Route::post('queues/jobs/bulk-delete', [QueueController::class, 'destroyJobs'])->name('queues.jobs.bulk-delete');
+            Route::get('queues/failed', [QueueController::class, 'failed'])->name('queues.failed');
+            Route::get('queues/failed/{id}', [QueueController::class, 'failedOne'])->whereNumber('id')->name('queues.failed.show');
+            Route::post('queues/failed/retry', [QueueController::class, 'retry'])->name('queues.failed.retry');
+            Route::post('queues/failed/bulk-delete', [QueueController::class, 'destroyFailed'])->name('queues.failed.bulk-delete');
         });
     });
 });

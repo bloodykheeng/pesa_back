@@ -22,7 +22,7 @@ class AccountEmailsTest extends AdminTestCase
             'password' => 'secret123', 'password_confirmation' => 'secret123',
         ])->assertCreated();
 
-        Mail::assertSent(AccountCreated::class, function (AccountCreated $mail) {
+        Mail::assertQueued(AccountCreated::class, function (AccountCreated $mail) {
             $html = $mail->render();
             return $mail->hasTo('ed@example.com')
                 && $mail->staff
@@ -31,7 +31,7 @@ class AccountEmailsTest extends AdminTestCase
                 && ! str_contains($html, 'secret123');
         });
         $this->assertTrue(PasswordReset::where('email', 'ed@example.com')->value('expires_at') > now()->addDays(6));
-        Mail::assertNotSent(AccountCreated::class, fn ($m) => $m->hasTo('boss@example.com'));
+        Mail::assertNotQueued(AccountCreated::class, fn ($m) => $m->hasTo('boss@example.com'));
     }
 
     public function test_the_welcome_link_works_for_days_not_just_an_hour(): void
@@ -53,7 +53,7 @@ class AccountEmailsTest extends AdminTestCase
         Mail::fake();
         $customer = $this->customer(['email' => 'shopper@example.com']);
 
-        Mail::assertSent(AccountCreated::class, fn (AccountCreated $m) => $m->hasTo('shopper@example.com') && str_contains($m->link, '/api/reset-password?token='));
+        Mail::assertQueued(AccountCreated::class, fn (AccountCreated $m) => $m->hasTo('shopper@example.com') && str_contains($m->link, '/api/reset-password?token='));
         $this->assertNotNull($customer);
     }
 
@@ -65,11 +65,11 @@ class AccountEmailsTest extends AdminTestCase
 
         Sanctum::actingAs($editor);
         $this->postJson('/api/admin/auth/password', ['current_password' => 'password', 'password' => 'brandnew1', 'password_confirmation' => 'brandnew1'])->assertOk();
-        Mail::assertSent(PasswordChanged::class, fn (PasswordChanged $m) => $m->hasTo($editor->email) && $m->how === 'from your profile');
+        Mail::assertQueued(PasswordChanged::class, fn (PasswordChanged $m) => $m->hasTo($editor->email) && $m->how === 'from your profile');
 
         Sanctum::actingAs($admin);
         $this->postJson("/api/admin/users/{$editor->id}", ['name' => $editor->name, 'email' => $editor->email, 'status' => 'active', 'role' => 'Editor', 'password' => 'another12', 'password_confirmation' => 'another12'])->assertOk();
-        Mail::assertSent(PasswordChanged::class, fn (PasswordChanged $m) => $m->how === 'by an administrator' && $m->byName === $admin->name);
+        Mail::assertQueued(PasswordChanged::class, fn (PasswordChanged $m) => $m->how === 'by an administrator' && $m->byName === $admin->name);
     }
 
     public function test_role_and_status_changes_are_told_and_inactive_accounts_are_signed_out(): void
@@ -81,12 +81,12 @@ class AccountEmailsTest extends AdminTestCase
 
         $this->postJson("/api/admin/users/{$editor->id}", ['name' => $editor->name, 'email' => $editor->email, 'status' => 'inactive', 'role' => 'Admin'])->assertOk();
 
-        Mail::assertSent(AccessChanged::class, fn (AccessChanged $m) => $m->changes === ['role' => ['Editor', 'Admin'], 'status' => ['active', 'inactive']]);
+        Mail::assertQueued(AccessChanged::class, fn (AccessChanged $m) => $m->changes === ['role' => ['Editor', 'Admin'], 'status' => ['active', 'inactive']]);
         $this->assertSame(0, $editor->tokens()->count());
 
         Mail::fake();
         $this->postJson("/api/admin/users/{$editor->id}", ['name' => 'Renamed', 'email' => $editor->email, 'status' => 'inactive', 'role' => 'Admin'])->assertOk();
-        Mail::assertNotSent(AccessChanged::class);
+        Mail::assertNotQueued(AccessChanged::class);
     }
 
     public function test_a_mail_failure_never_breaks_the_save(): void

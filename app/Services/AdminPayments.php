@@ -7,10 +7,9 @@ use App\Models\Package;
 use App\Models\PackagePayment;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Push;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
-use Throwable;
 
 /**
  * Payments staff record against an order or a package, and the push message the customer gets.
@@ -95,23 +94,10 @@ class AdminPayments
         });
     }
 
-    /** Push to one customer's phone; a missing token or a Firebase failure is logged, never thrown. */
+    /** Push to one customer's phone, queued (App\Support\Push): the request never waits on Firebase. */
     public function push(?int $userId, string $title, string $body): bool
     {
-        $token = $userId ? User::whereKey($userId)->value('device_token') : null;
-        if (! $token) {
-            return false;
-        }
-
-        try {
-            app(FirebaseService::class)->sendNotification($token, $title, $body);
-
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Push to user ' . $userId . ' failed: ' . $e->getMessage());
-
-            return false;
-        }
+        return Push::send($userId ? User::whereKey($userId)->value('device_token') : null, $title, $body);
     }
 
     private function guardDate(?\DateTimeInterface $paidAt, ?\DateTimeInterface $placedAt): void

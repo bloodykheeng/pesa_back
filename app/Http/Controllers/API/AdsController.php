@@ -109,7 +109,7 @@ class AdsController extends Controller
 
         // Check if the status is 'active' and the end date is greater than the current date
         if ($ad->status === 'active' && $ad->isRunning()) {
-            $this->firebaseService->sendNotificationTopic(
+            \App\Support\Push::everyone(
                 $validated['title'],
                 $validated['details']
             );
@@ -150,7 +150,7 @@ class AdsController extends Controller
 
         // Check if the status is 'active' and the end date is greater than the current date
         if ($ad->status === 'active' && $ad->isRunning()) {
-            $this->firebaseService->sendNotificationTopic(
+            \App\Support\Push::everyone(
                 $validated['title'],
                 $validated['details']
             );

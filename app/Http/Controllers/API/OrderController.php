@@ -284,7 +284,7 @@ class OrderController extends Controller
             if (isset($user->device_token)) {
                 try {
 
-                    $this->firebaseService->sendNotification($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+                    \App\Support\Push::send($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
                 } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
                     // Log the error or update the user that their device token is invalid
                     // Log::error('Device token not found for user: ' . $user->id . ' - ' . $e->getMessage());
@@ -298,9 +298,7 @@ class OrderController extends Controller
             $admins = User::role('Admin')->get();
             foreach ($admins as $admin) {
                 if ($admin->email) {
-                    Mail::send('emails.newOrderAdmin', ['order' => $order], function ($message) use ($admin) {
-                        $message->to($admin->email)->subject('New Order Submitted');
-                    });
+                    Mail::to($admin->email)->send(new \App\Mail\ViewMail('emails.newOrderAdmin', ['order' => $order], 'New Order Submitted'));
                 }
             }
 
@@ -361,21 +359,21 @@ class OrderController extends Controller
 
                 if (isset($user->device_token)) {
 
-                    $this->firebaseService->sendNotification($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
+                    \App\Support\Push::send($user->device_token, 'Order Update ', 'Order# ' . $order->order_number . ' status has been updated');
 
                     if ($order->payment_status === 'paid') {
 
-                        $this->firebaseService->sendNotification($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
+                        \App\Support\Push::send($user->device_token, 'Order Payment ', 'Payment for order# ' . $order->order_number . ' has been received');
                     }
 
                     if ($order->delivery_status === 'delivered') {
 
-                        $this->firebaseService->sendNotification($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
+                        \App\Support\Push::send($user->device_token, 'Order Delivery ', 'Your order# ' . $order->order_number . ' has been delivered');
                     }
 
                     if ($order->delivery_status === 'cancelled') {
 
-                        $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
+                        \App\Support\Push::send($user->device_token, 'Order Cancellation ', 'Your order# ' . $order->order_number . ' has been cancelled');
                     }
 
                 }
@@ -437,7 +435,7 @@ class OrderController extends Controller
         $user = User::find($order->created_by);
         try {
             if (isset($user->device_token)) {
-                $this->firebaseService->sendNotification($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
+                \App\Support\Push::send($user->device_token, 'Receipt Confirmation ', 'Order# ' . $order->order_number . ' has been received.');
             }
 
         } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
@@ -473,7 +471,7 @@ class OrderController extends Controller
         $user = User::find($order->created_by);
         try {
             if (isset($user->device_token)) {
-                $this->firebaseService->sendNotification($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
+                \App\Support\Push::send($user->device_token, 'Order Cancellation ', 'Order# ' . $order->order_number . ' has been cancelled.');
             }
 
         } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {

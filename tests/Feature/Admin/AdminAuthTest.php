@@ -66,6 +66,9 @@ class AdminAuthTest extends AdminTestCase
         $this->assertSame($a, $b);
         $this->assertSame($a, $c);
         $this->assertDatabaseHas('password_reset_tokens', ['email' => 'boss@example.com']);
+        // One reset email, to the staff member only, sent by the queue worker (not while the request waits).
+        Mail::assertQueued(\App\Mail\ViewMail::class, 1);
+        Mail::assertQueued(\App\Mail\ViewMail::class, fn ($m) => $m->hasTo('boss@example.com'));
         // The customer's own welcome link is left alone: the admin's forgot-password is for staff only.
         $this->assertSame($welcomeToken, \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token'));
     }

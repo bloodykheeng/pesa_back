@@ -61,7 +61,7 @@ class ReferalController extends Controller
             DB::commit();
 
             $user = User::find(Auth::user()->id);
-            $this->firebaseService->sendNotification($user->device_token, "Referal", "You've successfully added a referal.");
+            \App\Support\Push::send($user->device_token, "Referal", "You've successfully added a referal.");
 
             return response()->json(['message' => 'Referal created successfully!', 'user' => $referal], 201);
         } catch (\Exception $e) {

@@ -3,13 +3,18 @@
 namespace App\Mail;
 
 use App\Models\User;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
 /** A security notice: this account's password was changed, how and when. */
-class PasswordChanged extends Mailable
+class PasswordChanged extends Mailable implements ShouldQueue
 {
+    use Queueable, SerializesModels;
+
     public function __construct(
         public User $user,
         public string $how,

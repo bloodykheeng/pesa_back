@@ -32,9 +32,7 @@ class PasswordResetController extends Controller
                 $data['body'] = "Please click on the link below to reset your password";
 
                 // Send the password reset email
-                Mail::send('forgotPasswordMail', ['data' => $data], function ($message) use ($data) {
-                    $message->to($data['email'])->subject($data['title']);
-                });
+                Mail::to($data['email'])->send(new \App\Mail\ViewMail('forgotPasswordMail', ['data' => $data], $data['title']));
 
                 $datetime = Carbon::now()->format('Y-m-d H:i:s');
 

@@ -98,12 +98,12 @@ class AuthController extends Controller
         PasswordReset::updateOrCreate(['email' => $user->email], ['token' => $token, 'created_at' => now()]);
 
         $url = rtrim(config('app.admin_url'), '/') . '/reset-password?token=' . $token;
-        Mail::send('forgotPasswordMail', ['data' => [
+        Mail::to($user->email)->send(new \App\Mail\ViewMail('forgotPasswordMail', ['data' => [
             'url' => $url,
             'email' => $user->email,
             'title' => 'Reset your Elevate Pesa admin password',
             'body' => 'Someone asked to reset the password for this account. If it was you, open the link below within 60 minutes. If not, ignore this email.',
-        ]], fn ($message) => $message->to($user->email)->subject('Reset your Elevate Pesa admin password'));
+        ]], 'Reset your Elevate Pesa admin password'));
 
         return $answer;
     }

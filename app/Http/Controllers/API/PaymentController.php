@@ -147,7 +147,7 @@ class PaymentController extends Controller
             try {
 
                 if (isset($user->device_token)) {
-                    $this->firebaseService->sendNotification($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for order #" . $order->order_number . " has been received.");
+                    \App\Support\Push::send($user->device_token, "Payment. TID  #" . $validated['transaction_number'], "You're payment of UGX " . $validated['amount'] . " for order #" . $order->order_number . " has been received.");
 
                 }
 

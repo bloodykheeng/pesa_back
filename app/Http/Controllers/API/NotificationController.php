@@ -34,7 +34,7 @@ class NotificationController extends Controller
             if (in_array($validated['target'], ['app', 'all']) && isset($user->device_token)) {
                 try {
                     // Attempt to send the notification
-                    $this->firebaseService->sendNotification(
+                    \App\Support\Push::send(
                         $user->device_token,
                         'New Notification',
                         $validated['message']
@@ -51,9 +51,7 @@ class NotificationController extends Controller
             // Handle email notifications
             if (in_array($validated['target'], ['email', 'all']) && $user->email) {
                 $emailTemplate = 'emails.generalNotification'; // Create this email template
-                Mail::send($emailTemplate, ['notificationMessage' => $validated['message']], function ($message) use ($user) {
-                    $message->to($user->email)->subject('New Notification');
-                });
+                Mail::to($user->email)->send(new \App\Mail\ViewMail($emailTemplate, ['notificationMessage' => $validated['message']], 'New Notification'));
             }
         }
 
