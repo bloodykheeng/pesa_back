@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -122,10 +123,17 @@ class PackageController extends Controller
         ], 201);
     }
 
+    /**
+     * POST /api/admin/packages/{id}: edit the whole package, what New sets and more: the customer (its payments move
+     * too), when it was booked (never after its first payment), the price (never below what is paid; the balance and
+     * payment status follow). A delivery change still sends the customer a push.
+     */
     public function update(Request $request, int $id): JsonResponse
     {
         $package = Package::findOrFail($id);
         $data = $request->validate([
+            'customer_id' => ['sometimes', 'integer', Rule::exists('users', 'id')],
+            'placed_at' => 'sometimes|nullable|string|max:40',
             'name' => 'sometimes|string|max:255',
             'pickup' => 'sometimes|nullable|string|max:255',
             'destination' => 'sometimes|nullable|string|max:255',
@@ -139,18 +147,33 @@ class PackageController extends Controller
         ]);
 
         $before = $package->delivery_status;
-        $package->forceFill(collect($data)->except(['photo', 'remove_photo'])->all() + ['updated_by' => $request->user()->id]);
-        if (array_key_exists('charged_amount', $data)) {
-            $package->balance_due = max(0, (float) $package->charged_amount - (float) $package->amount_paid);
+        if (array_key_exists('placed_at', $data) && filled($data['placed_at'])) {
+            $placed = OrderController::placedAt($data['placed_at']);
+            $first = $package->payments()->min('created_at');
+            if ($first && $placed->greaterThan(\Carbon\CarbonImmutable::parse($first, 'UTC'))) {
+                throw ValidationException::withMessages(['placed_at' => 'After its first payment ('.OrderController::kampala($first).'): a package is booked before it is paid.']);
+            }
+            $package->created_at = $placed;
         }
+        if (isset($data['customer_id']) && (int) $data['customer_id'] !== (int) $package->created_by) {
+            $package->created_by = (int) $data['customer_id'];
+            $package->payments()->update(['user_id' => $package->created_by]);
+        }
+        if (array_key_exists('charged_amount', $data) && (float) $data['charged_amount'] < (float) $package->amount_paid) {
+            throw ValidationException::withMessages(['charged_amount' => 'Less than what is already paid ('.number_format((float) $package->amount_paid).' UGX).']);
+        }
+
+        // Set by hand = changed in this save (the form sends it every time).
+        $manualStatus = isset($data['payment_status']) && $data['payment_status'] !== $package->payment_status;
+        $package->forceFill(collect($data)->except(['photo', 'remove_photo', 'customer_id', 'placed_at'])->all() + ['updated_by' => $request->user()->id]);
         $this->applyPhoto($request, $package, 'package_photos');
-        $package->save();
+        $this->payments->settle($package, $manualStatus);
 
         if (($data['delivery_status'] ?? null) && $data['delivery_status'] !== $before) {
             $this->payments->push($package->created_by, 'Package update', 'Package "'.$package->name.'" is now '.$data['delivery_status'].'.');
         }
 
-        return response()->json(['message' => 'Package saved.', 'data' => new AdminResource($package)]);
+        return response()->json(['message' => 'Package saved.', 'data' => new AdminResource($package->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name']))]);
     }
 
     /** POST /api/admin/packages/{id}/payments */

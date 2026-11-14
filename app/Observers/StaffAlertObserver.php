@@ -23,9 +23,18 @@ class StaffAlertObserver
     {
         try {
             match (true) {
+                // Typed in by staff (entered_by): said so, and the one who typed it is not rung.
+                $model instanceof Order && $model->entered_by => StaffAlert::toStaff('order', 'Order #' . $model->order_number . ' entered',
+                    number_format((float) $model->charged_amount) . ' UGX for ' . (User::whereKey($model->created_by)->value('name') ?? 'a customer')
+                        . ', entered by ' . (User::whereKey($model->entered_by)->value('name') ?? 'staff'),
+                    '/dashboard/orders?view=' . $model->id, except: (int) $model->entered_by),
                 $model instanceof Order => StaffAlert::toStaff('order', 'New order #' . $model->order_number,
                     number_format((float) $model->charged_amount) . ' UGX from ' . (User::whereKey($model->created_by)->value('name') ?? 'a customer'),
                     '/dashboard/orders?view=' . $model->id),
+                $model instanceof Package && $model->entered_by => StaffAlert::toStaff('package', 'Package entered',
+                    ($model->name ?: 'A package') . ' for ' . (User::whereKey($model->created_by)->value('name') ?? 'a customer')
+                        . ', entered by ' . (User::whereKey($model->entered_by)->value('name') ?? 'staff'),
+                    '/dashboard/packages?view=' . $model->id, except: (int) $model->entered_by),
                 $model instanceof Package => StaffAlert::toStaff('package', 'New package booking',
                     ($model->name ?: 'A package') . ': ' . ($model->pickup ?: '?') . ' to ' . ($model->destination ?: '?'),
                     '/dashboard/packages?view=' . $model->id),

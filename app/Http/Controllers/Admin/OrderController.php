@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\AdminPayments;
 use App\Support\AdminList;
+use App\Support\Audit\Audit;
 use App\Support\DateBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -96,26 +97,20 @@ class OrderController extends Controller
             'status' => ['nullable', Rule::in(self::STATUSES)],
             'delivery_status' => ['nullable', Rule::in(self::DELIVERY_STATUSES)],
             'deduct_stock' => 'nullable|boolean',
-            'items' => 'required|array|min:1|max:50',
-            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')],
-            'items.*.quantity' => 'required|integer|min:1|max:100000',
-            'items.*.price' => 'required|numeric|min:0|max:1000000000',
-        ], [
-            'items.required' => 'Add at least one item.',
-            'items.*.product_id.distinct' => 'This product is on the order twice: change the quantity instead.',
-        ]);
+            // What the customer pays when it is not the items' total (a delivery fee, a discount). Empty = the total.
+            'charged_amount' => 'nullable|numeric|min:0|max:1000000000',
+            ...self::itemRules('required'),
+        ], self::ITEM_MESSAGES);
 
         $placedAt = self::placedAt($data['placed_at'] ?? null);
         $customer = User::findOrFail($data['customer_id']);
 
-        if ($data['payment_mode'] === 'bnpl' && Order::where('created_by', $customer->id)->where('payment_mode', 'bnpl')
-            ->where('balance_due', '>', 0)->where('status', '!=', 'cancelled')->where('delivery_status', '!=', 'cancelled')->exists()) {
-            throw ValidationException::withMessages(['payment_mode' => $customer->name.' still owes on a BNPL order. Record that payment first, or enter this one as cash on delivery.']);
+        if ($data['payment_mode'] === 'bnpl') {
+            self::guardBnpl($customer->id);
         }
 
         $staff = $request->user();
         $order = DB::transaction(function () use ($data, $placedAt, $customer, $staff) {
-            $products = Product::whereIn('id', array_column($data['items'], 'product_id'))->get(['id', 'name'])->keyBy('id');
             $total = array_sum(array_map(fn ($i) => (float) $i['price'] * (int) $i['quantity'], $data['items']));
 
             do {
@@ -130,9 +125,9 @@ class OrderController extends Controller
                 'payment_mode' => $data['payment_mode'],
                 'address' => $data['address'],
                 'amount' => $total,
-                'charged_amount' => $total,
+                'charged_amount' => $data['charged_amount'] ?? $total,
                 'amount_paid' => 0,
-                'balance_due' => $total,
+                'balance_due' => $data['charged_amount'] ?? $total,
                 'created_by' => $customer->id,
                 'updated_by' => $staff->id,
                 'entered_by' => $staff->id,
@@ -140,21 +135,7 @@ class OrderController extends Controller
                 'updated_at' => now(),
             ]);
 
-            foreach ($data['items'] as $item) {
-                OrderProduct::forceCreate([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'name' => $products[$item['product_id']]->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'created_by' => $customer->id,
-                    'created_at' => $placedAt,
-                    'updated_at' => now(),
-                ]);
-                if ($data['deduct_stock'] ?? true) {
-                    Product::whereKey($item['product_id'])->decrement('quantity', (int) $item['quantity']);
-                }
-            }
+            self::writeItems($order, $data['items'], (bool) ($data['deduct_stock'] ?? true), $placedAt);
 
             return $order;
         });
@@ -179,18 +160,89 @@ class OrderController extends Controller
         return $moment;
     }
 
+    /**
+     * POST /api/admin/orders/{id}: edit the whole order, what New sets and more, for app orders and entered ones alike.
+     * Every field is optional ("sometimes"), so a status-only save still works.
+     * - items: replace the lines; with adjust_stock (default on) the old quantities go back into stock and the new
+     *   ones come out, so the count stays right.
+     * - charged_amount: what the customer pays (the items' total, or another price agreed: delivery, a discount);
+     *   never below what is already paid. The balance and the payment status follow.
+     * - customer_id: moves the order and its payments to that customer. placed_at: never after its first payment.
+     * A delivery or status change still sends the customer a push.
+     */
     public function update(Request $request, int $id): JsonResponse
     {
-        $order = Order::findOrFail($id);
         $data = $request->validate([
+            'customer_id' => ['sometimes', 'integer', Rule::exists('users', 'id')],
+            'placed_at' => 'sometimes|nullable|string|max:40',
+            'address' => 'sometimes|nullable|string|max:255',
+            'payment_mode' => ['sometimes', Rule::in(self::PAYMENT_MODES)],
             'status' => ['sometimes', Rule::in(self::STATUSES)],
             'payment_status' => ['sometimes', Rule::in(self::PAYMENT_STATUSES)],
             'delivery_status' => ['sometimes', Rule::in(self::DELIVERY_STATUSES)],
-            'address' => 'sometimes|nullable|string|max:255',
-        ]);
+            'charged_amount' => 'sometimes|numeric|min:0|max:1000000000',
+            'adjust_stock' => 'nullable|boolean',
+            ...self::itemRules('sometimes'),
+        ], self::ITEM_MESSAGES);
 
-        $before = $order->only(['status', 'delivery_status']);
-        $order->forceFill($data + ['updated_by' => $request->user()->id])->save();
+        $staff = $request->user();
+        [$order, $before] = DB::transaction(function () use ($data, $id, $staff) {
+            $order = Order::with('orderProducts')->lockForUpdate()->findOrFail($id);
+            $before = $order->only(['status', 'delivery_status']);
+            $firstPayment = $order->payments()->min('created_at');
+
+            if (array_key_exists('placed_at', $data) && filled($data['placed_at'])) {
+                $placed = self::placedAt($data['placed_at']);
+                if ($firstPayment && $placed->greaterThan(CarbonImmutable::parse($firstPayment, 'UTC'))) {
+                    throw ValidationException::withMessages(['placed_at' => 'After its first payment ('.self::kampala($firstPayment).'): an order is placed before it is paid.']);
+                }
+                $order->created_at = $placed;
+            }
+
+            if (isset($data['customer_id']) && (int) $data['customer_id'] !== (int) $order->created_by) {
+                $order->created_by = (int) $data['customer_id'];
+                $order->payments()->update(['user_id' => $order->created_by]);
+            }
+
+            $mode = $data['payment_mode'] ?? $order->payment_mode;
+            if ($mode === 'bnpl' && ($order->isDirty('created_by') || $mode !== $order->payment_mode)) {
+                self::guardBnpl((int) $order->created_by, $order->id);
+            }
+
+            if (isset($data['items'])) {
+                $old = self::itemsText($order->orderProducts);
+                if ($data['adjust_stock'] ?? true) {
+                    foreach ($order->orderProducts as $line) {
+                        if ($line->product_id) {
+                            Product::whereKey($line->product_id)->increment('quantity', (int) $line->quantity);
+                        }
+                    }
+                }
+                $order->orderProducts()->delete();
+                $order->amount = self::writeItems($order, $data['items'], (bool) ($data['adjust_stock'] ?? true), CarbonImmutable::parse($order->created_at, 'UTC'));
+                Audit::change($order, 'items', 'Items', $old, self::itemsText($order->orderProducts()->get()));
+                if (! array_key_exists('charged_amount', $data)) {
+                    $order->charged_amount = $order->amount;
+                }
+            }
+
+            if (array_key_exists('charged_amount', $data)) {
+                if ((float) $data['charged_amount'] < (float) $order->amount_paid) {
+                    throw ValidationException::withMessages(['charged_amount' => 'Less than what is already paid ('.number_format((float) $order->amount_paid).' UGX).']);
+                }
+                $order->charged_amount = $data['charged_amount'];
+            }
+
+            // Set by hand = changed in this save (the form sends it every time).
+            $manualStatus = isset($data['payment_status']) && $data['payment_status'] !== $order->payment_status;
+            $order->forceFill(collect($data)->only(['address', 'payment_mode', 'status', 'payment_status', 'delivery_status'])->all());
+            $order->updated_by = $staff->id;
+            $order->save();
+            // The balance and payment status follow the charge, unless the payment status was set by hand.
+            $this->payments->settle($order, $manualStatus);
+
+            return [$order, $before];
+        });
 
         if (($data['delivery_status'] ?? null) && $data['delivery_status'] !== $before['delivery_status']) {
             $this->payments->push($order->created_by, 'Order update', 'Order #'.$order->order_number.' is now '.$data['delivery_status'].'.');
@@ -198,7 +250,70 @@ class OrderController extends Controller
             $this->payments->push($order->created_by, 'Order update', 'Order #'.$order->order_number.' is now '.$data['status'].'.');
         }
 
-        return response()->json(['message' => 'Order #'.$order->order_number.' saved.', 'data' => new AdminResource($order)]);
+        return response()->json(['message' => 'Order #'.$order->order_number.' saved.', 'data' => new AdminResource($order->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name']))]);
+    }
+
+    /** @return array<string, mixed> the item rules, shared by New and Edit */
+    private static function itemRules(string $presence): array
+    {
+        return [
+            'items' => $presence.'|array|min:1|max:50',
+            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')],
+            'items.*.quantity' => 'required|integer|min:1|max:100000',
+            'items.*.price' => 'required|numeric|min:0|max:1000000000',
+        ];
+    }
+
+    private const ITEM_MESSAGES = [
+        'items.required' => 'Add at least one item.',
+        'items.min' => 'Add at least one item.',
+        'items.*.product_id.distinct' => 'This product is on the order twice: change the quantity instead.',
+    ];
+
+    /** Writes the lines (named after their products), takes them out of stock when asked; returns their total. */
+    private static function writeItems(Order $order, array $items, bool $deduct, CarbonImmutable $placedAt): float
+    {
+        $products = Product::whereIn('id', array_column($items, 'product_id'))->get(['id', 'name'])->keyBy('id');
+        foreach ($items as $item) {
+            OrderProduct::forceCreate([
+                'order_id' => $order->id,
+                'product_id' => $item['product_id'],
+                'name' => $products[$item['product_id']]->name,
+                'quantity' => $item['quantity'],
+                'price' => $item['price'],
+                'created_by' => $order->created_by,
+                'created_at' => $placedAt,
+                'updated_at' => now(),
+            ]);
+            if ($deduct) {
+                Product::whereKey($item['product_id'])->decrement('quantity', (int) $item['quantity']);
+            }
+        }
+
+        return array_sum(array_map(fn ($i) => (float) $i['price'] * (int) $i['quantity'], $items));
+    }
+
+    /** "Shell 12kg × 2 at 90,000; Elevate water × 1 at 10,000": the items as the audit trail shows a change to them. */
+    private static function itemsText($lines): string
+    {
+        return collect($lines)->map(fn ($l) => $l->name.' × '.(int) $l->quantity.' at '.number_format((float) $l->price))->implode('; ') ?: 'none';
+    }
+
+    /** The app's rule: one unpaid buy-now-pay-later order at a time per customer. */
+    private static function guardBnpl(int $customerId, ?int $except = null): void
+    {
+        $owes = Order::where('created_by', $customerId)->where('payment_mode', 'bnpl')->when($except, fn ($q) => $q->whereKeyNot($except))
+            ->where('balance_due', '>', 0)->where('status', '!=', 'cancelled')->where('delivery_status', '!=', 'cancelled')->exists();
+        if ($owes) {
+            $name = User::whereKey($customerId)->value('name') ?? 'This customer';
+            throw ValidationException::withMessages(['payment_mode' => $name.' still owes on a BNPL order. Record that payment first, or make this one cash on delivery.']);
+        }
+    }
+
+    /** "14 Nov 2026, 7:47 pm": a stored instant on the Kampala clock, for messages. */
+    public static function kampala($instant): string
+    {
+        return CarbonImmutable::parse($instant, 'UTC')->setTimezone(DateBounds::timezone())->format('j M Y, g:i a');
     }
 
     /** POST /api/admin/orders/{id}/payments */

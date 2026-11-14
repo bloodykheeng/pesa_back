@@ -27,10 +27,10 @@ class StaffAlert extends Notification
         return ['kind' => $this->kind, 'title' => $this->title, 'body' => $this->body, 'link' => $this->link];
     }
 
-    /** Every staff account gets it. */
-    public static function toStaff(string $kind, string $title, string $body, ?string $link = null): void
+    /** Every staff account gets it, except the one who caused it (`$except`), who knows already. */
+    public static function toStaff(string $kind, string $title, string $body, ?string $link = null, ?int $except = null): void
     {
-        $staff = \App\Models\User::role(\App\Models\User::STAFF_ROLES)->get();
+        $staff = \App\Models\User::role(\App\Models\User::STAFF_ROLES)->when($except, fn ($q) => $q->whereKeyNot($except))->get();
         \Illuminate\Support\Facades\Notification::send($staff, new self($kind, $title, $body, $link));
     }
 }

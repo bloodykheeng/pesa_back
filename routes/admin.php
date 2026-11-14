@@ -64,8 +64,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('payments', [PaymentController::class, 'orderPayments'])->name('payments.index');
         Route::get('payments/{id}', [PaymentController::class, 'showOrderPayment'])->whereNumber('id')->name('payments.show');
+        Route::post('payments/{id}', [PaymentController::class, 'updateOrderPayment'])->whereNumber('id')->name('payments.update');
         Route::get('package-payments', [PaymentController::class, 'packagePayments'])->name('package-payments.index');
         Route::get('package-payments/{id}', [PaymentController::class, 'showPackagePayment'])->whereNumber('id')->name('package-payments.show');
+        Route::post('package-payments/{id}', [PaymentController::class, 'updatePackagePayment'])->whereNumber('id')->name('package-payments.update');
 
         // Products
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
@@ -107,6 +109,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             Route::get('audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');
             Route::get('audit-trail/{id}', [AuditTrailController::class, 'show'])->whereNumber('id')->name('audit-trail.show');
+
+            // Deleting money records is for Admins; staff correct them.
+            Route::post('payments/{id}/delete', [PaymentController::class, 'destroyOrderPayment'])->whereNumber('id')->name('payments.destroy');
+            Route::post('package-payments/{id}/delete', [PaymentController::class, 'destroyPackagePayment'])->whereNumber('id')->name('package-payments.destroy');
 
             // Background work: waiting and failed jobs (Settings > Queues)
             Route::get('queues/stats', [QueueController::class, 'stats'])->name('queues.stats');

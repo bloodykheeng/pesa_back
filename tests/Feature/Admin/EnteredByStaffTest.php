@@ -118,7 +118,7 @@ class EnteredByStaffTest extends AdminTestCase
         Sanctum::actingAs($this->admin());
 
         $this->postJson("/api/admin/orders/{$order->id}/payments", ['amount' => 1000, 'payment_method' => 'cash', 'paid_at' => '2026-10-01T09:00:00.000Z'])
-            ->assertStatus(422)->assertJsonPath('errors.paid_at.0', 'Before it was placed: check the date.');
+            ->assertStatus(422)->assertJsonPath('errors.paid_at.0', 'Before the order was placed (2 Oct 2026, 3:00 pm): a payment comes after it.');
 
         $this->postJson("/api/admin/orders/{$order->id}/payments", ['amount' => 1000, 'payment_method' => 'cash', 'paid_at' => '2026-10-03T09:00:00.000Z'])
             ->assertCreated();

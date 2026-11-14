@@ -77,6 +77,19 @@ emailed. A payment (`POST .../{id}/payments`) takes an optional `paid_at` for an
 the order, and no push. `GET /api/admin/customers` (Editors too) feeds the customer picker with name, phone and email
 only. Tests: `tests/Feature/Admin/EnteredByStaffTest.php`.
 
+**Edit is the whole record.** `POST /api/admin/orders/{id}` takes everything New does (customer, `placed_at`, address,
+items, `charged_amount`, payment mode, statuses) plus `payment_status` and `adjust_stock` (item changes move stock,
+default on); `POST /api/admin/packages/{id}` likewise (customer, `placed_at`, price, statuses, photo). The charge never
+goes below what is paid, the placed date never after the first payment, a changed customer takes its payments along,
+and the balance and payment status follow (`AdminPayments::settle`) unless the payment status was changed by hand in
+the same save. Item changes are in the audit trail as "Items: before → after".
+
+**Payments are instalments.** Record as many as needed until the balance is 0. Staff correct one with
+`POST /api/admin/payments/{id}` (or `package-payments/{id}`): never more than the balance plus that payment, no push.
+Admins delete one with `POST .../{id}/delete`: the balance grows back. `amount_paid` moves by each change rather than
+being re-added from the rows, because the old admin let staff type a package's "amount paid" with no payment behind it.
+Tests: `tests/Feature/Admin/EditOrdersAndPaymentsTest.php`.
+
 ## Dates
 
 Every date filter (`filter[from]` / `filter[to]`, the dashboard's `from` / `to`, the old API's `startDate` / `endDate`,
