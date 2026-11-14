@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Reverb channels for the admin's live signals (docs/realtime.md): POST /api/admin/broadcasting/auth with the
+    // admin's Sanctum token, never a session cookie.
+    ->withBroadcasting(__DIR__.'/../routes/channels.php', ['prefix' => 'api/admin', 'middleware' => ['api', 'auth:sanctum']])
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

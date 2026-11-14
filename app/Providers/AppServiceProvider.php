@@ -32,6 +32,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Live signals to the admin through Reverb, so it never polls (docs/realtime.md): a bell alert stored for a
+        // staff member refreshes their bell; a job queued, finished or failed refreshes Settings > Queues.
+        Event::listen(function (\Illuminate\Notifications\Events\NotificationSent $e) {
+            if ($e->notification instanceof \App\Notifications\StaffAlert && $e->channel === 'database') {
+                \App\Events\StaffSignal::fire('inbox', [], (int) $e->notifiable->getKey());
+            }
+        });
+        Event::listen(fn (\Illuminate\Queue\Events\JobQueued $e) => \App\Events\StaffSignal::fire('queues'));
+        \Illuminate\Support\Facades\Queue::after(fn () => \App\Events\StaffSignal::fire('queues'));
+        \Illuminate\Support\Facades\Queue::failing(fn () => \App\Events\StaffSignal::fire('queues'));
+
         // The staff bell: new orders, package bookings and sign-ups from the app.
         Models\Order::observe(StaffAlertObserver::class);
         Models\Package::observe(StaffAlertObserver::class);

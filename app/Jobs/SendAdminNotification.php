@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\StaffSignal;
 use App\Models\AdminNotification;
 use App\Models\AdminNotificationRecipient;
 use App\Notifications\StaffAlert;
@@ -52,9 +53,12 @@ class SendAdminNotification implements ShouldQueue
                 foreach ($recipients as $recipient) {
                     $this->deliver($notification, $recipient, $firebase, $firebaseError);
                 }
+                // The admin's Messages page follows the send live (docs/realtime.md).
+                StaffSignal::fire('messages', ['id' => $notification->id]);
             });
 
         $this->finish($notification);
+        StaffSignal::fire('messages', ['id' => $notification->id]);
     }
 
     private function deliver(AdminNotification $notification, AdminNotificationRecipient $recipient, ?FirebaseService $firebase, ?string $firebaseError): void
@@ -124,5 +128,6 @@ class SendAdminNotification implements ShouldQueue
     public function failed(Throwable $e): void
     {
         AdminNotification::whereKey($this->notificationId)->update(['status' => 'failed', 'finished_at' => now()]);
+        StaffSignal::fire('messages', ['id' => $this->notificationId]);
     }
 }

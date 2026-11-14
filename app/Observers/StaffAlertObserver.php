@@ -47,6 +47,17 @@ class StaffAlertObserver
             Log::warning('Staff alert failed: ' . $e->getMessage());
         }
 
+        // Every open admin refreshes the lists and the dashboard (docs/realtime.md).
+        $kind = match (true) {
+            $model instanceof Order => 'order',
+            $model instanceof Package => 'package',
+            $model instanceof User => 'customer',
+            default => null,
+        };
+        if ($kind) {
+            \App\Events\StaffSignal::fire('records', ['kind' => $kind]);
+        }
+
         // A customer who signed up in the app gets the welcome email (accounts an admin makes get
         // theirs from Admin\UserController, which knows the role).
         if ($model instanceof User && ! UserController::$creatingFromAdmin) {
