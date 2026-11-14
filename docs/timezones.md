@@ -66,6 +66,8 @@ and removed the same day as needless). Why that is safe:
   set to different zones. Elevate's local database is a copy of production (written under UTC) read on a laptop whose
   MySQL runs on Kampala time, so on this laptop the copied rows show 3 hours late (`00:55` for a sign-up at `21:55`
   UTC). Local only; ignore it, or test against data written on the laptop.
+- `APP_TIMEZONE=UTC` is PHP's clock only; Laravel sets MySQL's session zone only when a connection has a `timezone`
+  key. A 3-hour gap on a laptop: first ask where the rows were written (a production copy?), never add config for it.
 - **Check once** that the Contabo MySQL runs on UTC like the old Hostinger one (`timedatectl`;
   `mysql -e "select @@global.time_zone, @@system_time_zone"`). If the two servers' zones differed, the rows copied from
   Hostinger are 3 hours off on the live site and need converting once; adding a pin would not be the fix.
