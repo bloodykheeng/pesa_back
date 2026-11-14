@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\dashboard;
 
+use App\Support\DateBounds;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -123,11 +124,11 @@ class BarChartsController extends Controller
         // $query = Order::query();
 
         if ($startDate) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $query->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if ($endDate) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $query->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         $query = $this->filterOrdersData($request, $query);
@@ -193,11 +194,11 @@ class BarChartsController extends Controller
         }
 
         if ($startDate) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $query->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if ($endDate) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $query->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         $query = $this->filterOrdersData($request, $query);

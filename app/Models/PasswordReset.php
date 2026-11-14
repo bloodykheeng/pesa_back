@@ -14,6 +14,8 @@ class PasswordReset extends Model
     protected $primaryKey = 'email'; // Corrected property name
     protected $casts = [
         'email' => 'string',
+        'created_at' => 'datetime',
+        'expires_at' => 'datetime',
     ];
     protected $fillable = ['email', 'token', 'created_at', 'expires_at'];
 }

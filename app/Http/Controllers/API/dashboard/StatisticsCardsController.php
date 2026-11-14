@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\dashboard;
 
+use App\Support\DateBounds;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Package;
@@ -119,11 +120,11 @@ class StatisticsCardsController extends Controller
         $createdBy = $request->input('createdBy');
 
         if (isset($startDate)) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $query->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if (isset($endDate)) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $query->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         if (isset($createdBy)) {
@@ -174,11 +175,11 @@ class StatisticsCardsController extends Controller
         }
 
         if (isset($startDate)) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $query->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if (isset($endDate)) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $query->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         if (isset($createdBy)) {
@@ -212,13 +213,13 @@ class StatisticsCardsController extends Controller
 
         // Apply date filters for orders and packages
         if (isset($startDate)) {
-            $ordersQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
-            $packagesQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $ordersQuery->where('created_at', '>=', DateBounds::startInstant($startDate));
+            $packagesQuery->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if (isset($endDate)) {
-            $ordersQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
-            $packagesQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $ordersQuery->where('created_at', '<=', DateBounds::endInstant($endDate));
+            $packagesQuery->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         // Apply delivery status filter
@@ -278,11 +279,11 @@ class StatisticsCardsController extends Controller
         }
 
         if (isset($startDate)) {
-            $orderQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $orderQuery->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if (isset($endDate)) {
-            $orderQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $orderQuery->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         // Apply delivery status filter for Orders
@@ -305,11 +306,11 @@ class StatisticsCardsController extends Controller
         }
 
         if (isset($startDate)) {
-            $packageQuery->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $packageQuery->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if (isset($endDate)) {
-            $packageQuery->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $packageQuery->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         // Apply delivery status filter for Packages

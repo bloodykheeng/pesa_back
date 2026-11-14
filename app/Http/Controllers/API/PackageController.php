@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Support\DateBounds;
 use App\Models\Package;
 use App\Models\User;
 use App\Services\FirebaseService;
@@ -61,7 +62,7 @@ class PackageController extends Controller
 
         // Add date range filter
         if ($request->has('start_date') && $request->has('end_date')) {
-            $query->whereBetween('created_at', [$request->input('start_date'), $request->input('end_date')]);
+            $query->whereBetween('created_at', [DateBounds::startInstant($request->input('start_date'), 'start_date'), DateBounds::endInstant($request->input('end_date'), 'end_date')]);
         }
 
         // Add search functionality

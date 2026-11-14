@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\Moment;
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -61,6 +62,8 @@ class User extends Authenticatable implements HasSnapshotSchema
     {
         return [
             'email_verified_at' => 'datetime',
+            // Was uncast, so it went out as "2025-12-14 20:08:50" with no Z and a browser read it as local time.
+            'lastlogin' => Moment::class,
             'password' => 'hashed',
         ];
     }

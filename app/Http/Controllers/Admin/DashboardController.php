@@ -9,7 +9,7 @@ use App\Models\PackagePayment;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\User;
-use App\Support\AdminList;
+use App\Support\DateBounds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,10 +45,11 @@ class DashboardController extends Controller
         $filters = Arr::only($data, [...Order::ITEM_FILTERS, ...Order::STATUS_FILTERS]);
         $items = array_filter(Arr::only($filters, Order::ITEM_FILTERS), fn ($v) => $v !== null && $v !== '');
 
-        [$start, $end] = AdminList::utcRange($data['from'] ?? null, $data['to'] ?? null);
+        // Both ends inclusive, as UTC instants of the Kampala days (DateBounds, docs/timezones.md).
+        [$start, $end] = DateBounds::range($data['from'] ?? null, $data['to'] ?? null);
         $inPeriod = function (Builder $q, string $column = 'created_at') use ($start, $end) {
             return $q->when($start, fn ($w) => $w->where($q->qualifyColumn($column), '>=', $start))
-                ->when($end, fn ($w) => $w->where($q->qualifyColumn($column), '<', $end));
+                ->when($end, fn ($w) => $w->where($q->qualifyColumn($column), '<=', $end));
         };
         $ordersQuery = fn () => $inPeriod(Order::query())->matching($filters);
 
@@ -61,10 +62,11 @@ class DashboardController extends Controller
             ->when($filters, fn ($q) => $q->whereHas('order', fn (Builder $o) => $o->matching($filters)));
         $packagePayments = $inPeriod(PackagePayment::query());
 
-        $tz = '+03:00';
+        // Months are Kampala months: an order at 01:30 on 1 March in Kampala is February in UTC.
+        $month = DateBounds::businessMonthSql('orders.created_at');
         $monthly = $ordersQuery()
             ->where('status', '!=', 'cancelled')
-            ->selectRaw("DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '{$tz}'), '%Y-%m') as month, COUNT(*) as orders, SUM(charged_amount) as value, SUM(amount_paid) as paid")
+            ->selectRaw("{$month} as month, COUNT(*) as orders, SUM(charged_amount) as value, SUM(amount_paid) as paid")
             ->groupBy('month')->orderBy('month')->get()
             ->map(fn ($r) => ['month' => $r->month, 'orders' => (int) $r->orders, 'value' => (float) $r->value, 'paid' => (float) $r->paid]);
 
@@ -116,7 +118,7 @@ class DashboardController extends Controller
                 'with_balance' => (clone $livePackages)->where('balance_due', '>', 0)->count(),
             ],
             'customers' => [
-                'total' => User::role('Customer')->when($end, fn ($q) => $q->where('created_at', '<', $end))->count(),
+                'total' => User::role('Customer')->when($end, fn ($q) => $q->where('users.created_at', '<=', $end))->count(),
                 'new' => $inPeriod(User::role('Customer'))->count(),
             ],
             // Order payments (narrowed by the order filters) and package payments, each the list it opens.

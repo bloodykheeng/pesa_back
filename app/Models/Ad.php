@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Casts\Moment;
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
-
+use App\Support\DateBounds;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -41,10 +43,26 @@ class Ad extends Model implements HasSnapshotSchema
      * @var array
      */
     protected $casts = [
-        'start_date' => 'datetime',
-        'end_date' => 'datetime',
+        // Moments in UTC; a day picked without a time is that Kampala day's first moment (docs/timezones.md).
+        'start_date' => Moment::class,
+        'end_date' => Moment::class,
         'price' => 'decimal:2',
     ];
+
+    /**
+     * Ads still running: no end, or an end on today's Kampala day or later. An ad "to 31 Dec" runs all of the 31st,
+     * whether its end was saved as the day (its first moment, 00:00 in Kampala) or with a time (the old admin).
+     */
+    public function scopeRunning(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q->whereNull('end_date')
+            ->orWhere('end_date', '>=', DateBounds::startInstant(DateBounds::today())));
+    }
+
+    public function isRunning(): bool
+    {
+        return $this->end_date === null || $this->end_date->gte(DateBounds::startInstant(DateBounds::today()));
+    }
 
     protected $attributes = [
         'status' => 'active',

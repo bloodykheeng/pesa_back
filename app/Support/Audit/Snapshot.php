@@ -4,6 +4,7 @@ namespace App\Support\Audit;
 
 use App\Contracts\HasSnapshotSchema;
 use App\Models\User;
+use App\Support\DateBounds;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -117,7 +118,8 @@ final class Snapshot
         return match ($def['type'] ?? 'string') {
             'relation' => ['id' => $value, 'label' => self::safely(fn () => ($def['resolve'])($value)) ?? "#{$value} (no longer exists)"],
             'enum' => ['value' => (string) $value, 'label' => $def['labels'][$value] ?? Str::headline((string) $value)],
-            'date' => self::safely(fn () => CarbonImmutable::parse($value)->format('Y-m-d')) ?? (string) $value,
+            // A day: a calendar date as it is, a moment (an ad's start) as its Kampala day, never the UTC date.
+            'date' => self::safely(fn () => DateBounds::businessDayOf($value)) ?? (string) $value,
             'datetime' => self::safely(fn () => CarbonImmutable::parse($value, 'UTC')->utc()->toIso8601ZuluString()) ?? (string) $value,
             'boolean' => (bool) $value,
             'number', 'money' => is_numeric($value) ? $value + 0 : $value,

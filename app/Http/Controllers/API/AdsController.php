@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Support\DateBounds;
 use App\Models\Ad;
 use App\Services\FirebaseService;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
@@ -38,11 +39,11 @@ class AdsController extends Controller
 
         // Apply filters if the parameters are provided
         if (!empty($startDate)) {
-            $query->whereDate('start_date', '>=', $startDate); // Or use other comparison as needed
+            $query->where('start_date', '>=', DateBounds::startInstant($startDate, 'start_date'));
         }
 
         if (!empty($endDate)) {
-            $query->whereDate('end_date', '<=', $endDate);
+            $query->where('end_date', '<=', DateBounds::endInstant($endDate, 'end_date'));
         }
 
         if (isset($title)) {
@@ -107,7 +108,7 @@ class AdsController extends Controller
         ]);
 
         // Check if the status is 'active' and the end date is greater than the current date
-        if ($ad->status === 'active' && $ad->end_date > now()) {
+        if ($ad->status === 'active' && $ad->isRunning()) {
             $this->firebaseService->sendNotificationTopic(
                 $validated['title'],
                 $validated['details']
@@ -148,7 +149,7 @@ class AdsController extends Controller
         $ad->update($validated);
 
         // Check if the status is 'active' and the end date is greater than the current date
-        if ($ad->status === 'active' && $ad->end_date > now()) {
+        if ($ad->status === 'active' && $ad->isRunning()) {
             $this->firebaseService->sendNotificationTopic(
                 $validated['title'],
                 $validated['details']
@@ -177,12 +178,8 @@ class AdsController extends Controller
     public function get_ads()
     {
         // Fetch only active ads that haven't reached the end date
-        $ads = Ad::where('status', 'active')
-            ->where(function ($query) {
-                $query->whereNull('end_date') // End date is null
-                    ->orWhere('end_date', '>', now()); // Or end date is greater than the current date
-            })
-            ->get();
+        // Running through the whole Kampala day of their end (Ad::scopeRunning).
+        $ads = Ad::where('status', 'active')->running()->get();
 
         return response()->json($ads);
     }

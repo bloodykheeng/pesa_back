@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -49,27 +48,15 @@ class AdminList
         });
     }
 
-    /** filter[from] and filter[to]: whole Kampala calendar days, inclusive. */
+    /**
+     * filter[from] and filter[to], both inclusive, through DateBounds (docs/timezones.md): a bare day is the whole
+     * Kampala day, a value with a time is that exact moment.
+     */
     public static function dateRange(string $column = 'created_at'): array
     {
         return [
-            AllowedFilter::callback('from', fn (Builder $q, $value) => $q->where($q->qualifyColumn($column), '>=', self::dayStartUtc($value))),
-            AllowedFilter::callback('to', fn (Builder $q, $value) => $q->where($q->qualifyColumn($column), '<', self::dayStartUtc($value)->addDay())),
-        ];
-    }
-
-    /** Midnight of a Kampala day, in UTC (how timestamps are stored). */
-    public static function dayStartUtc(string $date): CarbonImmutable
-    {
-        return CarbonImmutable::parse($date, config('app.business_timezone'))->startOfDay()->utc();
-    }
-
-    /** The UTC range [start, end) for an optional from/to pair of Kampala days. Null ends are open. */
-    public static function utcRange(?string $from, ?string $to): array
-    {
-        return [
-            $from ? self::dayStartUtc($from) : null,
-            $to ? self::dayStartUtc($to)->addDay() : null,
+            AllowedFilter::callback('from', fn (Builder $q, $value) => $q->where($q->qualifyColumn($column), '>=', DateBounds::startInstant($value, 'filter.from'))),
+            AllowedFilter::callback('to', fn (Builder $q, $value) => $q->where($q->qualifyColumn($column), '<=', DateBounds::endInstant($value, 'filter.to'))),
         ];
     }
 }

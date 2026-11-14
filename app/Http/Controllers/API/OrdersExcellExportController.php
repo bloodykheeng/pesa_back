@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Support\DateBounds;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Carbon\Carbon;
@@ -142,11 +143,11 @@ class OrdersExcellExportController extends Controller
         ]);
 
         if ($startDate) {
-            $query->whereDate('created_at', '>=', Carbon::parse($startDate));
+            $query->where('created_at', '>=', DateBounds::startInstant($startDate));
         }
 
         if ($endDate) {
-            $query->whereDate('created_at', '<=', Carbon::parse($endDate));
+            $query->where('created_at', '<=', DateBounds::endInstant($endDate));
         }
 
         //

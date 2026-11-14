@@ -57,3 +57,10 @@ at `/api/admin/audit-trail`. See [audit-trail.md](audit-trail.md). A missing rec
 `GET /api/admin/payments` take the same keys as `filter[...]`: all three go through `Order::scopeMatching` (an order
 matches when any of its items does), so a figure and its list agree. `GET /api/admin/users/{id}` is open to Editors
 for customer accounts (an order's customer); staff accounts stay Admin-only.
+
+## Dates
+
+Every date filter (`filter[from]` / `filter[to]`, the dashboard's `from` / `to`, the old API's `startDate` / `endDate`,
+`start_date` / `end_date`) takes a bare day (`2026-11-04`: the whole Kampala day) or an instant with `Z` or an offset
+(used exactly); both ends are inclusive. Every moment goes out as UTC ISO with its `Z`; `date_of_birth` as a plain
+day. A bad date answers 422. Rules and helpers: [timezones.md](timezones.md).

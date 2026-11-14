@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\AdminList;
 use App\Support\Audit\Audit;
 use App\Support\Audit\Device;
+use App\Support\DateBounds;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -136,8 +137,9 @@ class AuditTrailController extends Controller
         return match ($type) {
             'boolean' => $value ? 'Yes' : 'No',
             'money' => 'UGX '.number_format((float) $value),
-            'date' => Carbon::parse((string) $value)->format('j M Y'),
-            'datetime' => Carbon::parse((string) $value)->setTimezone('Africa/Kampala')->format('j M Y, g:i a'),
+            // A snapshot's date is already a Kampala day ("2026-11-09"); a datetime is UTC, shown on the business clock.
+            'date' => Carbon::parse((string) DateBounds::businessDayOf($value))->format('j M Y'),
+            'datetime' => Carbon::parse((string) $value, 'UTC')->setTimezone(DateBounds::timezone())->format('j M Y, g:i a'),
             default => Str::limit((string) $value, 60),
         };
     }

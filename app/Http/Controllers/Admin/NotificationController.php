@@ -9,6 +9,7 @@ use App\Models\AdminNotification;
 use App\Models\AdminNotificationRecipient;
 use App\Models\User;
 use App\Support\AdminList;
+use App\Support\DateBounds;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -159,7 +160,7 @@ class NotificationController extends Controller
 
     private function emailsLeftToday(): int
     {
-        $start = AdminList::dayStartUtc(now(config('app.business_timezone'))->toDateString());
+        $start = DateBounds::startInstant(DateBounds::today());
         $used = AdminNotificationRecipient::whereIn('email_status', ['pending', 'sent'])->where('updated_at', '>=', $start)->count();
 
         return max(0, (int) config('app.mail_daily_limit') - $used);
