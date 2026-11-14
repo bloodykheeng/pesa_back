@@ -79,7 +79,10 @@ What it does on Elevate (checked on the server, read-only, 14 Nov 2026):
   ("Incorrect datetime value"), and the hour they fall back is ambiguous. UTC has neither.
 - On a laptop whose MySQL runs on Kampala time, a production copy reads right with the pin.
 
-### Deploying it to Contabo (once)
+### Deploying it to Contabo (once): done 2026-11-14
+
+Ran in the `3c2b28a` deploy: the test FAQ deleted, the 2 tokens moved, session `+00:00`, `RMPH3AXKU7` reads `19:10:17`.
+Kept below as the record and for any other server moved this way.
 
 Rows the live app wrote on Contabo since the import (13 Nov 2026 12:40 UTC) were stored in Berlin time; with the pin
 they would read 1 hour early, so move them once, in the same deploy. On 14 Nov 2026 they were: `faqs` 1 row (the
