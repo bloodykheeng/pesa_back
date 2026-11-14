@@ -135,6 +135,37 @@ class AuditTrailTest extends AdminTestCase
         $this->assertSame('Signed in to the admin dashboard', Activity::where('event', 'signed_in')->sole()->description);
     }
 
+    public function test_reset_requests_and_resets_are_recorded_under_sign_ins(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $this->customer(['email' => 'shopper@example.com']);
+        $this->customer(['email' => 'gone@example.com', 'status' => 'deactive']);
+        $this->settle();
+
+        foreach (['shopper@example.com', 'nobody@example.com', 'gone@example.com'] as $email) {
+            $this->postJson('/api/admin/auth/forgot-password', ['email' => $email])->assertOk();
+        }
+        $token = \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token');
+        $this->postJson('/api/reset-password', ['token' => $token, 'password' => 'newpass1', 'password_confirmation' => 'newpass1'])->assertOk();
+
+        $asked = Activity::where('event', 'password_reset_requested')->orderBy('id')->get();
+        $this->assertSame(['emailed', 'no_account', 'inactive'], $asked->map(fn ($a) => $a->properties['extra']['outcome'])->all());
+        $this->assertSame(['shopper@example.com', 'nobody@example.com', 'gone@example.com'], $asked->map(fn ($a) => $a->properties['extra']['login'])->all());
+        $this->assertSame('Password reset link emailed', $asked[0]->description);
+
+        $done = Activity::where('event', 'password_reset')->sole();
+        $this->assertSame('Password changed with a reset link', $done->description);
+        $this->assertSame('shopper@example.com', $done->properties['causer']['email']);
+        // The password edit itself names the account holder, not "someone signing up".
+        $edit = Activity::where('event', 'updated')->where('log_name', 'Accounts')->latest('id')->first();
+        $this->assertSame('shopper@example.com', $edit->properties['causer']['email']);
+
+        Sanctum::actingAs($this->admin());
+        $rows = collect($this->getJson('/api/admin/audit-trail?filter[kind]=sign_ins&per_page=50')->assertOk()->json('data'));
+        $this->assertEqualsCanonicalizing(['password_reset_requested', 'password_reset'], $rows->pluck('event')->unique()->values()->all());
+        $this->assertContains('nobody@example.com', $rows->pluck('login')->all());
+    }
+
     public function test_only_admins_read_the_trail_and_a_record_history_filters_to_it(): void
     {
         $product = Product::forceCreate(['name' => 'Tecno Pop 8', 'price' => 300000, 'quantity' => 10, 'status' => 'active']);

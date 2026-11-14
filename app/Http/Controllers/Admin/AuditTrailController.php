@@ -36,7 +36,7 @@ class AuditTrailController extends Controller
                 // The audit trail's two tabs: changes to records, and sign-ins (with sign-outs and failed attempts).
                 AllowedFilter::callback('kind', fn (Builder $q, $v) => match ((string) $v) {
                     'changes' => $q->whereIn('event', ['created', 'updated', 'deleted']),
-                    'sign_ins' => $q->whereIn('event', ['signed_in', 'signed_out', 'sign_in_failed']),
+                    'sign_ins' => $q->whereIn('event', Audit::SIGN_IN_EVENTS),
                     default => $q,
                 }),
                 AllowedFilter::exact('causer', 'causer_id'),
@@ -97,6 +97,9 @@ class AuditTrailController extends Controller
             'subject_id' => $a->subject_id,
             'causer_id' => $a->causer_id,
             'causer' => $p['causer'] ?? null,
+            // The address typed on a failed sign-in or a reset request (nobody is signed in then).
+            'login' => $p['extra']['login'] ?? null,
+            'outcome' => $p['extra']['outcome'] ?? null,
             'source' => $p['source'] ?? null,
             'request_id' => $a->batch_uuid,
             'changed' => isset($p['changes']) ? count($p['changes']) : null,

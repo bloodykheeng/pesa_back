@@ -20,7 +20,10 @@ class PasswordResetController extends Controller
 
         try {
             $user = User::where('email', $request->email)->first();
-            // return response()->json(['success' => false, 'message' => 'testing', '$request->email' => $user->email], 404);
+            \App\Support\Audit\Audit::event('password_reset_requested', $user, \App\Http\Controllers\Admin\AuthController::RESET_ASKED[$user ? 'emailed' : 'no_account'], [
+                'login' => (string) $request->email,
+                'outcome' => $user ? 'emailed' : 'no_account',
+            ]);
             if ($user) {
                 $token = Str::random(40);
                 $domain = URL::to('/');
@@ -108,8 +111,17 @@ class PasswordResetController extends Controller
                 : response()->view('resetLinkInvalid', [], 410);
         }
 
+        // The person holding the link is acting on their own account: the trail's edit entry names them.
+        auth()->setUser($user);
         $user->password = Hash::make($request->input('password'));
         $user->save();
+        \App\Support\Audit\Audit::event(
+            'password_reset',
+            $user,
+            $reset->expires_at ? 'Password set with the welcome link' : 'Password changed with a reset link',
+            [],
+            $user,
+        );
         $user->tokens()->delete(); // sign out every device that used the old password
         PasswordReset::where('email', $user->email)->delete();
         app(\App\Services\AccountEmails::class)->passwordChanged($user, 'with a reset link');

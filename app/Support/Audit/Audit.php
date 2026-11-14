@@ -34,7 +34,12 @@ final class Audit
         'signed_in' => 'Signed in',
         'signed_out' => 'Signed out',
         'sign_in_failed' => 'Sign-in failed',
+        'password_reset_requested' => 'Reset asked',
+        'password_reset' => 'Password reset',
     ];
+
+    /** The events listed under "Sign-ins and passwords" in the admin. */
+    public const SIGN_IN_EVENTS = ['signed_in', 'signed_out', 'sign_in_failed', 'password_reset_requested', 'password_reset'];
 
     /** @var array<string, array<string, mixed>> */
     private array $pending = [];

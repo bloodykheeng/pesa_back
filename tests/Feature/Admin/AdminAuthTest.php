@@ -52,25 +52,36 @@ class AdminAuthTest extends AdminTestCase
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
-    public function test_forgot_password_answers_the_same_and_mails_only_staff(): void
+    public function test_forgot_password_mails_staff_and_customers_and_answers_alike_naming_the_address(): void
     {
         Mail::fake();
         $this->admin(['email' => 'boss@example.com']);
         $this->customer(['email' => 'shopper@example.com']);
+        $this->customer(['email' => 'gone@example.com', 'status' => 'deactive']);
         $welcomeToken = \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token');
 
-        $a = $this->postJson('/api/admin/auth/forgot-password', ['email' => 'boss@example.com'])->assertOk()->json('message');
-        $b = $this->postJson('/api/admin/auth/forgot-password', ['email' => 'shopper@example.com'])->assertOk()->json('message');
-        $c = $this->postJson('/api/admin/auth/forgot-password', ['email' => 'nobody@example.com'])->assertOk()->json('message');
+        $answer = fn (string $email) => $this->postJson('/api/admin/auth/forgot-password', ['email' => $email])->assertOk()->json('message');
+        $template = fn (string $email) => str_replace($email, '<email>', $answer($email));
 
-        $this->assertSame($a, $b);
-        $this->assertSame($a, $c);
-        $this->assertDatabaseHas('password_reset_tokens', ['email' => 'boss@example.com']);
-        // One reset email, to the staff member only, sent by the queue worker (not while the request waits).
-        Mail::assertQueued(\App\Mail\ViewMail::class, 1);
+        $this->assertSame(
+            'If boss@example.com has an Elevate Pesa account, a reset link is on its way. It works for 60 minutes.',
+            $answer('boss@example.com'),
+        );
+        // Unknown and inactive addresses read exactly like real ones.
+        $this->assertSame($template('shopper@example.com'), $template('nobody@example.com'));
+        $this->assertSame($template('shopper@example.com'), $template('gone@example.com'));
+
+        // Emails to the staff member and the customer only (queued; the customer asked twice above).
         Mail::assertQueued(\App\Mail\ViewMail::class, fn ($m) => $m->hasTo('boss@example.com'));
-        // The customer's own welcome link is left alone: the admin's forgot-password is for staff only.
-        $this->assertSame($welcomeToken, \App\Models\PasswordReset::where('email', 'shopper@example.com')->value('token'));
+        Mail::assertQueued(\App\Mail\ViewMail::class, fn ($m) => $m->hasTo('shopper@example.com'));
+        Mail::assertNotQueued(\App\Mail\ViewMail::class, fn ($m) => $m->hasTo('gone@example.com') || $m->hasTo('nobody@example.com'));
+
+        // The customer's new link replaces the welcome link, lasts 60 minutes and saves through the public endpoint.
+        $reset = \App\Models\PasswordReset::where('email', 'shopper@example.com')->first();
+        $this->assertNotSame($welcomeToken, $reset->token);
+        $this->assertNull($reset->expires_at);
+        $this->postJson('/api/reset-password', ['token' => $reset->token, 'password' => 'newpass1', 'password_confirmation' => 'newpass1'])->assertOk();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newpass1', \App\Models\User::where('email', 'shopper@example.com')->value('password')));
     }
 
     public function test_customers_cannot_use_the_admin_api_and_editors_cannot_manage_accounts(): void

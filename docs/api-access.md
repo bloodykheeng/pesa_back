@@ -5,6 +5,14 @@ Defined in `routes/api.php` (mobile app + old admin) and `routes/admin.php` (new
 | Group | Who | Examples |
 | --- | --- | --- |
 | public | anyone | `login`, `app-login`, `register`, `forgot-password`, `reset-password`, `app-product-categories`, `app-products` |
+
+**Password reset** (since 2026-11-15, for staff and customers alike): the mobile app's "Forgot password?" opens
+`adb.elevatepesa.com/reset-password` with no token, which asks for the email and calls
+`POST /api/admin/auth/forgot-password` (public, 5 per IP per 15 minutes). Any active account gets a 60-minute link to
+`/reset-password?token=...`, which saves through `POST /api/reset-password`; a fresh link replaces an older one,
+a 7-day welcome link included. The answer is the same for every address and names the one typed
+("If x@y.com has an Elevate Pesa account, a reset link is on its way."). The old `POST /api/forgot-password`
+(404 for an unknown address, link to the API's own page) is kept unchanged for old app builds.
 | app | any signed-in user | `products` (GET), `orders` (POST), `my-orders`, `packages` (POST), `my-packages`, `messages`, `get-faqs`, `save-token` |
 | own record | the user themselves, or staff | `users/{user}` (GET), `profile-update/{id}`, `change-password/{id}` (middleware `self.or.staff`) |
 | staff | roles `Admin` or `Editor` (`User::STAFF_ROLES`) | everything else: lists, writes, statistics, exports, notifications, roles |

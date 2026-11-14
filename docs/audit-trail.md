@@ -25,6 +25,11 @@ until 2026-11-14). Nothing in the app uses the package's `LogsActivity` trait.
 - **Sign-ins** (every way in creates a Sanctum token: the app, Google, the old admin, the new admin),
   **sign-outs** (the person deleting their own token) and **failed sign-ins** (the app's
   `Auth::attempt`, and the admin login).
+- **Password resets**: every request for a link (`password_reset_requested`, from the admin's
+  `/admin/auth/forgot-password` or the old public `/forgot-password`) with the address typed and the outcome
+  (`emailed`, `no_account`, `inactive`; requests over the rate limit are not written, so the form cannot flood
+  the trail), and every password saved with a link (`password_reset`: "changed with a reset link" or "set with
+  the welcome link"; the account's own edit entry names the account holder). Listed with sign-ins.
 
 Not recorded: chat messages between customers and staff (private), the push token the app saves,
 sign-in times (`lastlogin`; sign-ins are entries of their own), the sending job's delivery counters.
@@ -105,7 +110,7 @@ class ElectronicBrand extends Model implements HasSnapshotSchema
 ## Reading it
 
 `GET /api/admin/audit-trail` filters: `filter[kind]` (`changes`: created, updated, deleted; `sign_ins`: signed in,
-signed out, failed), `filter[search]` (description and properties),
+signed out, failed, password reset asked and done, `Audit::SIGN_IN_EVENTS`), `filter[search]` (description and properties),
 `filter[module]`, `filter[event]`, `filter[source]`, `filter[causer]` (user id),
 `filter[subject_type]` (short class name: `Order`) + `filter[subject_id]` (one record's history),
 `filter[request]` (one request's entries), `filter[from]` / `filter[to]` (Kampala days). Sorted newest

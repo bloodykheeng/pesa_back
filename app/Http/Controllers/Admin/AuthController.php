@@ -78,32 +78,52 @@ class AuthController extends Controller
      * Emails a reset link that opens the dashboard's /reset-password page. The answer is the same
      * whether or not the address belongs to staff, so it cannot be used to find accounts.
      */
+    /** The audit trail's sentence for each reset request (also used by the public PasswordResetController). */
+    public const RESET_ASKED = [
+        'emailed' => 'Password reset link emailed',
+        'no_account' => 'Password reset asked for an address with no account: nothing sent',
+        'inactive' => 'Password reset asked for an inactive account: nothing sent',
+    ];
+
     public function forgotPassword(Request $request): JsonResponse
     {
-        $email = $request->validate(['email' => 'required|email'])['email'];
-        $answer = response()->json(['message' => 'If that address belongs to a staff account, a reset link is on its way. It works for 60 minutes.']);
+        $email = trim($request->validate(['email' => 'required|email'])['email']);
+        // The same answer for every address (it names the one typed, so a typo shows), so nobody can probe
+        // which addresses have an account.
+        $answer = response()->json([
+            'message' => "If {$email} has an Elevate Pesa account, a reset link is on its way. It works for 60 minutes.",
+            'email' => $email,
+        ]);
 
+        // Over the limit: nothing sent and nothing written, so hammering the form cannot flood the trail.
         $key = 'admin-forgot:' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             return $answer;
         }
         RateLimiter::hit($key, 900);
 
+        // Staff and customers alike: the mobile app's "Forgot password?" opens the admin's /reset-password,
+        // and the emailed link saves through the public POST /api/reset-password for anyone.
+        // An inactive account cannot sign in, so it gets no link.
         $user = User::where('email', $email)->first();
-        if (! $user || ! $user->hasAnyRole(User::STAFF_ROLES)) {
+        $outcome = ! $user ? 'no_account' : (($user->status && $user->status !== 'active') ? 'inactive' : 'emailed');
+        \App\Support\Audit\Audit::event('password_reset_requested', $user, self::RESET_ASKED[$outcome], ['login' => $email, 'outcome' => $outcome]);
+        if ($outcome !== 'emailed') {
             return $answer;
         }
 
         $token = Str::random(64);
-        PasswordReset::updateOrCreate(['email' => $user->email], ['token' => $token, 'created_at' => now()]);
+        // A fresh link replaces any older one, a 7-day welcome link included: it lasts 60 minutes.
+        PasswordReset::updateOrCreate(['email' => $user->email], ['token' => $token, 'created_at' => now(), 'expires_at' => null]);
 
+        $title = $user->hasAnyRole(User::STAFF_ROLES) ? 'Reset your Elevate Pesa admin password' : 'Reset your Elevate Pesa password';
         $url = rtrim(config('app.admin_url'), '/') . '/reset-password?token=' . $token;
         Mail::to($user->email)->send(new \App\Mail\ViewMail('forgotPasswordMail', ['data' => [
             'url' => $url,
             'email' => $user->email,
-            'title' => 'Reset your Elevate Pesa admin password',
+            'title' => $title,
             'body' => 'Someone asked to reset the password for this account. If it was you, open the link below within 60 minutes. If not, ignore this email.',
-        ]], 'Reset your Elevate Pesa admin password'));
+        ]], $title));
 
         return $answer;
     }
