@@ -80,12 +80,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('{id}', [CatalogController::class, 'update'])->whereNumber('id')->name('update');
         });
 
+        // One account: Editors too, for a customer opened over an order or payment (the controller keeps staff
+        // accounts to Admins).
+        Route::get('users/{id}', [UserController::class, 'show'])->whereNumber('id')->name('users.show');
+
         // Admins only: accounts, roles, messages to customers, the audit trail
         Route::middleware('role:Admin')->group(function () {
             Route::get('users', [UserController::class, 'index'])->name('users.index');
             Route::post('users', [UserController::class, 'store'])->name('users.store');
             Route::post('users/bulk-delete', [UserController::class, 'destroyMany'])->name('users.bulk-delete');
-            Route::get('users/{id}', [UserController::class, 'show'])->whereNumber('id')->name('users.show');
             Route::post('users/{id}', [UserController::class, 'update'])->whereNumber('id')->name('users.update');
 
             Route::get('roles', [RoleController::class, 'index'])->name('roles.index');

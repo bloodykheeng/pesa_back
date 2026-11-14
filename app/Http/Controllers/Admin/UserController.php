@@ -50,11 +50,16 @@ class UserController extends Controller
         return AdminResource::collection(AdminList::paginate($query, $request));
     }
 
-    public function show(int $id)
+    /**
+     * One account. Editors may open a customer's (an order's customer, opened over the order), never a staff
+     * account: Customers & staff stays the Admins' page.
+     */
+    public function show(Request $request, int $id)
     {
-        $user = User::with(['roles:id,name', 'orders' => fn ($q) => $q->latest()->limit(5)])
+        $user = User::with(['roles:id,name', 'orders' => fn ($q) => $q->latest()->limit(5), 'packages' => fn ($q) => $q->latest()->limit(5)])
             ->withCount(['orders', 'packages'])
             ->findOrFail($id);
+        abort_unless($request->user()->hasRole('Admin') || $user->hasRole('Customer'), 403, 'Only Admins can open staff accounts.');
 
         $data = (new AdminResource($user))->resolve();
         $data['totals'] = [
@@ -84,7 +89,7 @@ class UserController extends Controller
 
         app(AccountEmails::class)->created($user, $request->user());
 
-        return response()->json(['message' => $user->name . ' added. We emailed them a link to choose their password.', 'data' => new AdminResource($user->load('roles'))], 201);
+        return response()->json(['message' => $user->name.' added. We emailed them a link to choose their password.', 'data' => new AdminResource($user->load('roles'))], 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -125,7 +130,7 @@ class UserController extends Controller
             $user->tokens()->delete(); // an inactive account is signed out everywhere
         }
 
-        return response()->json(['message' => $user->name . ' saved.', 'data' => new AdminResource($user->load('roles'))]);
+        return response()->json(['message' => $user->name.' saved.', 'data' => new AdminResource($user->load('roles'))]);
     }
 
     public function destroyMany(Request $request): JsonResponse
@@ -138,7 +143,7 @@ class UserController extends Controller
 
         $withHistory = User::whereIn('id', $ids)->where(fn ($q) => $q->has('orders')->orHas('packages'))->pluck('name');
         if ($withHistory->isNotEmpty()) {
-            return response()->json(['message' => 'These have orders or packages and are kept: ' . $withHistory->implode(', ') . '. Make them inactive instead.'], 422);
+            return response()->json(['message' => 'These have orders or packages and are kept: '.$withHistory->implode(', ').'. Make them inactive instead.'], 422);
         }
 
         $users = User::whereIn('id', $ids)->get();
@@ -149,7 +154,7 @@ class UserController extends Controller
         }));
         $users->each(fn (User $u) => $this->deletePhoto($u->photo_url));
 
-        return response()->json(['message' => $users->count() . ' account' . ($users->count() === 1 ? '' : 's') . ' deleted.']);
+        return response()->json(['message' => $users->count().' account'.($users->count() === 1 ? '' : 's').' deleted.']);
     }
 
     private function rules(?User $user = null): array
@@ -163,7 +168,7 @@ class UserController extends Controller
             'nin' => 'nullable|string|max:20',
             'date_of_birth' => 'nullable|date|before:today',
             'role' => ['required', Rule::in(Role::pluck('name'))],
-            'password' => ($user ? 'nullable' : 'required') . '|string|min:8|confirmed',
+            'password' => ($user ? 'nullable' : 'required').'|string|min:8|confirmed',
             'photo' => self::PHOTO_RULE,
             'remove_photo' => 'nullable|boolean',
         ];

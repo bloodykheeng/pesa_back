@@ -8,6 +8,7 @@ use App\Http\Resources\AdminResource;
 use App\Models\Package;
 use App\Services\AdminPayments;
 use App\Support\AdminList;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -41,6 +42,9 @@ class PackageController extends Controller
                 AllowedFilter::exact('delivery_status'),
                 AllowedFilter::exact('payment_mode'),
                 AllowedFilter::exact('customer', 'created_by'),
+                AllowedFilter::callback('has_balance', fn (Builder $q, $v) => filter_var($v, FILTER_VALIDATE_BOOLEAN)
+                    ? $q->where('balance_due', '>', 0)->where('status', '!=', 'cancelled')
+                    : $q->where('balance_due', '<=', 0)),
                 ...AdminList::dateRange(),
             ])
             ->allowedSorts(['id', 'name', 'package_number', 'charged_amount', 'amount_paid', 'balance_due', 'status', 'created_at'])
@@ -84,7 +88,7 @@ class PackageController extends Controller
         $package->save();
 
         if (($data['delivery_status'] ?? null) && $data['delivery_status'] !== $before) {
-            $this->payments->push($package->created_by, 'Package update', 'Package "' . $package->name . '" is now ' . $data['delivery_status'] . '.');
+            $this->payments->push($package->created_by, 'Package update', 'Package "'.$package->name.'" is now '.$data['delivery_status'].'.');
         }
 
         return response()->json(['message' => 'Package saved.', 'data' => new AdminResource($package)]);
@@ -103,7 +107,7 @@ class PackageController extends Controller
 
         $payment = $this->payments->recordPackagePayment($package, $data, $request->user());
 
-        return response()->json(['message' => 'Payment of ' . number_format((float) $payment->amount) . ' UGX recorded.', 'data' => new AdminResource($package->fresh())], 201);
+        return response()->json(['message' => 'Payment of '.number_format((float) $payment->amount).' UGX recorded.', 'data' => new AdminResource($package->fresh())], 201);
     }
 
     public function destroyMany(Request $request): JsonResponse
@@ -112,7 +116,7 @@ class PackageController extends Controller
 
         $paid = Package::whereIn('id', $ids)->whereHas('payments')->pluck('name');
         if ($paid->isNotEmpty()) {
-            return response()->json(['message' => 'These have payments and cannot be deleted: ' . $paid->implode(', ') . '. Cancel them instead.'], 422);
+            return response()->json(['message' => 'These have payments and cannot be deleted: '.$paid->implode(', ').'. Cancel them instead.'], 422);
         }
 
         $packages = Package::whereIn('id', $ids)->get();
@@ -121,6 +125,6 @@ class PackageController extends Controller
             $this->deletePhoto($p->photo_url);
         });
 
-        return response()->json(['message' => $packages->count() . ' package' . ($packages->count() === 1 ? '' : 's') . ' deleted.']);
+        return response()->json(['message' => $packages->count().' package'.($packages->count() === 1 ? '' : 's').' deleted.']);
     }
 }

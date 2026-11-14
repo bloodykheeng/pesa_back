@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Support\AdminList;
 use App\Support\Audit\Audit;
+use App\Support\Audit\Device;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -29,6 +32,12 @@ class AuditTrailController extends Controller
                 AdminList::search(['description', 'properties']),
                 AllowedFilter::exact('module', 'log_name'),
                 AllowedFilter::exact('event'),
+                // The audit trail's two tabs: changes to records, and sign-ins (with sign-outs and failed attempts).
+                AllowedFilter::callback('kind', fn (Builder $q, $v) => match ((string) $v) {
+                    'changes' => $q->whereIn('event', ['created', 'updated', 'deleted']),
+                    'sign_ins' => $q->whereIn('event', ['signed_in', 'signed_out', 'sign_in_failed']),
+                    default => $q,
+                }),
                 AllowedFilter::exact('causer', 'causer_id'),
                 AllowedFilter::exact('subject_id'),
                 AllowedFilter::exact('request', 'batch_uuid'),
@@ -63,7 +72,7 @@ class AuditTrailController extends Controller
             ...$this->row($activity),
             'snapshot' => $properties['snapshot'] ?? null,
             'changes' => $properties['changes'] ?? null,
-            'request' => $properties['request'] ?? null,
+            'request' => isset($properties['request']) ? [...$properties['request'], 'device' => $this->device($properties)] : null,
             'extra' => $properties['extra'] ?? null,
             // How many entries the same request wrote (an order and its payment, say).
             'same_request' => $activity->batch_uuid ? Activity::where('batch_uuid', $activity->batch_uuid)->count() : 1,
@@ -90,7 +99,46 @@ class AuditTrailController extends Controller
             'source' => $p['source'] ?? null,
             'request_id' => $a->batch_uuid,
             'changed' => isset($p['changes']) ? count($p['changes']) : null,
+            // The first few changes as one line each, so the list says what changed without opening it.
+            'changes_preview' => array_map(fn (array $c) => [
+                'label' => $c['label'] ?? $c['field'] ?? '',
+                'old' => $this->plain($c['old'] ?? null, $c['type'] ?? null),
+                'new' => $this->plain($c['new'] ?? null, $c['type'] ?? null),
+                'secret' => ($c['type'] ?? null) === 'secret',
+            ], array_slice($p['changes'] ?? [], 0, 3)),
             'ip' => $p['request']['ip'] ?? null,
+            'device' => isset($p['request']) ? $this->device($p)['summary'] : null,
         ];
+    }
+
+    /** @return array{kind: string, platform: ?string, browser: ?string, summary: string} */
+    private function device(array $p): array
+    {
+        $stored = $p['request']['device'] ?? null;
+
+        return is_array($stored) ? $stored : Device::describe($p['request']['user_agent'] ?? null);
+    }
+
+    /** A frozen value as short text: {id, label} and {value, label} by their label, lists by their size. */
+    private function plain(mixed $value, ?string $type): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_array($value)) {
+            if (array_key_exists('label', $value)) {
+                return (string) $value['label'];
+            }
+
+            return count($value).' '.(count($value) === 1 ? 'item' : 'items');
+        }
+
+        return match ($type) {
+            'boolean' => $value ? 'Yes' : 'No',
+            'money' => 'UGX '.number_format((float) $value),
+            'date' => Carbon::parse((string) $value)->format('j M Y'),
+            'datetime' => Carbon::parse((string) $value)->setTimezone('Africa/Kampala')->format('j M Y, g:i a'),
+            default => Str::limit((string) $value, 60),
+        };
     }
 }

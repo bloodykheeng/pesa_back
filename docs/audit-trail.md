@@ -39,7 +39,11 @@ sign-in times (`lastlogin`; sign-ins are entries of their own), the sending job'
 | `subject_type` / `subject_id` | the record (kept after it is deleted) |
 | `causer_id` | the user who did it (none for a sign-up or a failed sign-in) |
 | `batch_uuid` | the request's id: every entry one request wrote shares it |
-| `properties` | `title`, `causer` {name, email, role} frozen, `source` (`admin`, `old-admin`, `app`, `system`), `request` {method, path, ip, user_agent}, then `snapshot` (create / delete) or `changes` (edit), and `extra` (the email a failed sign-in tried) |
+| `properties` | `title`, `causer` {name, email, role} frozen, `source` (`admin`, `old-admin`, `app`, `system`), `request` {method, path, ip, user_agent, device}, then `snapshot` (create / delete) or `changes` (edit), and `extra` (the email a failed sign-in tried) |
+
+`request.device` is the user agent as people say it, `{kind, platform, browser, summary}` ("Chrome 158 on Windows",
+"The app on Android 14"), worked out by `App\Support\Audit\Device` (no package) when the entry is written. Entries
+written before it existed get it worked out when read.
 
 ## The rule: resolve when written, never when read
 
@@ -100,11 +104,14 @@ class ElectronicBrand extends Model implements HasSnapshotSchema
 
 ## Reading it
 
-`GET /api/admin/audit-trail` filters: `filter[search]` (description and properties),
+`GET /api/admin/audit-trail` filters: `filter[kind]` (`changes`: created, updated, deleted; `sign_ins`: signed in,
+signed out, failed), `filter[search]` (description and properties),
 `filter[module]`, `filter[event]`, `filter[source]`, `filter[causer]` (user id),
 `filter[subject_type]` (short class name: `Order`) + `filter[subject_id]` (one record's history),
 `filter[request]` (one request's entries), `filter[from]` / `filter[to]` (Kampala days). Sorted newest
-first. The response carries `modules` (those with entries) for the Module filter.
+first. The response carries `modules` (those with entries) for the Module filter. Each row carries `device`
+(the summary), `ip` and `changes_preview` (its first three changes as text: label, old, new; a secret's values
+null), so the list says what changed without opening the entry.
 `GET /api/admin/audit-trail/{id}` adds `snapshot`, `changes`, `request`, `extra` and `same_request`.
 
 Every View dialog in the admin has a **History** link (Admins) to its record's entries.

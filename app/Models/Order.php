@@ -4,9 +4,10 @@ namespace App\Models;
 
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 class Order extends Model implements HasSnapshotSchema
 {
@@ -53,6 +54,48 @@ class Order extends Model implements HasSnapshotSchema
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    /** What an order can be narrowed to by its items: an order matches when any of its items does. */
+    public const ITEM_FILTERS = ['product', 'inventory_type', 'product_category', 'electronic_category'];
+
+    /** The order's own fields the dashboard narrows by. */
+    public const STATUS_FILTERS = ['delivery_status', 'payment_status', 'payment_mode'];
+
+    /**
+     * Orders matching the dashboard's filters, the same rule wherever they apply (the dashboard, the Orders list,
+     * Order payments), so a figure and the list its arrow opens count the same orders. Empty values are ignored.
+     *
+     * @param  array<string, mixed>  $filters  product, inventory_type, product_category, electronic_category (ids),
+     *                                         delivery_status, payment_status, payment_mode
+     */
+    public function scopeMatching(Builder $query, array $filters): Builder
+    {
+        $items = array_filter(Arr::only($filters, self::ITEM_FILTERS), fn ($v) => $v !== null && $v !== '');
+        if ($items) {
+            $query->whereHas('orderProducts', fn (Builder $line) => self::itemMatching($line, $items));
+        }
+        foreach (self::STATUS_FILTERS as $column) {
+            if (($filters[$column] ?? '') !== '' && ($filters[$column] ?? null) !== null) {
+                $query->where($query->qualifyColumn($column), $filters[$column]);
+            }
+        }
+
+        return $query;
+    }
+
+    /** Order lines whose product is the one picked, or of the kind picked. */
+    public static function itemMatching(Builder $line, array $items): Builder
+    {
+        return $line
+            ->when($items['product'] ?? null, fn ($q, $id) => $q->where('order_products.product_id', $id))
+            ->when(
+                array_intersect_key($items, array_flip(['inventory_type', 'product_category', 'electronic_category'])),
+                fn ($q) => $q->whereHas('product', fn (Builder $p) => $p
+                    ->when($items['inventory_type'] ?? null, fn ($w, $id) => $w->where('inventory_types_id', $id))
+                    ->when($items['electronic_category'] ?? null, fn ($w, $id) => $w->where('electronic_category_id', $id))
+                    ->when($items['product_category'] ?? null, fn ($w, $id) => $w->whereHas('categoryBrand', fn ($b) => $b->where('product_categories_id', $id)))),
+            );
+    }
+
     /** How the audit trail describes this record (docs/audit-trail.md). */
     public static function snapshotSchema(): array
     {
@@ -83,6 +126,6 @@ class Order extends Model implements HasSnapshotSchema
 
     public function auditTitle(): string
     {
-        return 'Order #' . $this->order_number;
+        return 'Order #'.$this->order_number;
     }
 }

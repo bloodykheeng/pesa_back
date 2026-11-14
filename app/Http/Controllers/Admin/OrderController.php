@@ -43,6 +43,8 @@ class OrderController extends Controller
                 AllowedFilter::callback('has_balance', fn (Builder $q, $v) => filter_var($v, FILTER_VALIDATE_BOOLEAN)
                     ? $q->where('balance_due', '>', 0)->where('status', '!=', 'cancelled')
                     : $q->where('balance_due', '<=', 0)),
+                // What was ordered (the dashboard's filters, carried by its arrows): Order::scopeMatching.
+                ...array_map(fn (string $key) => AllowedFilter::callback($key, fn (Builder $q, $v) => $q->matching([$key => $v])), Order::ITEM_FILTERS),
                 ...AdminList::dateRange(),
             ])
             ->allowedSorts(['id', 'order_number', 'amount', 'charged_amount', 'amount_paid', 'balance_due', 'status', 'payment_status', 'delivery_status', 'created_at'])
@@ -78,12 +80,12 @@ class OrderController extends Controller
         $order->forceFill($data + ['updated_by' => $request->user()->id])->save();
 
         if (($data['delivery_status'] ?? null) && $data['delivery_status'] !== $before['delivery_status']) {
-            $this->payments->push($order->created_by, 'Order update', 'Order #' . $order->order_number . ' is now ' . $data['delivery_status'] . '.');
+            $this->payments->push($order->created_by, 'Order update', 'Order #'.$order->order_number.' is now '.$data['delivery_status'].'.');
         } elseif (($data['status'] ?? null) && $data['status'] !== $before['status']) {
-            $this->payments->push($order->created_by, 'Order update', 'Order #' . $order->order_number . ' is now ' . $data['status'] . '.');
+            $this->payments->push($order->created_by, 'Order update', 'Order #'.$order->order_number.' is now '.$data['status'].'.');
         }
 
-        return response()->json(['message' => 'Order #' . $order->order_number . ' saved.', 'data' => new AdminResource($order)]);
+        return response()->json(['message' => 'Order #'.$order->order_number.' saved.', 'data' => new AdminResource($order)]);
     }
 
     /** POST /api/admin/orders/{id}/payments */
@@ -99,7 +101,7 @@ class OrderController extends Controller
 
         $payment = $this->payments->recordOrderPayment($order, $data, $request->user());
 
-        return response()->json(['message' => 'Payment of ' . number_format((float) $payment->amount) . ' UGX recorded.', 'data' => new AdminResource($order->fresh())], 201);
+        return response()->json(['message' => 'Payment of '.number_format((float) $payment->amount).' UGX recorded.', 'data' => new AdminResource($order->fresh())], 201);
     }
 
     /** Orders with payments are kept (cancel them instead); the rest go with their lines. */
@@ -109,7 +111,7 @@ class OrderController extends Controller
 
         $paid = Order::whereIn('id', $ids)->whereHas('payments')->pluck('order_number');
         if ($paid->isNotEmpty()) {
-            return response()->json(['message' => 'These have payments and cannot be deleted: #' . $paid->implode(', #') . '. Cancel them instead.'], 422);
+            return response()->json(['message' => 'These have payments and cannot be deleted: #'.$paid->implode(', #').'. Cancel them instead.'], 422);
         }
 
         // One by one, so each deleted order (with its items) is kept in the audit trail;
@@ -118,6 +120,6 @@ class OrderController extends Controller
         DB::transaction(fn () => $orders->each->delete());
         $count = $orders->count();
 
-        return response()->json(['message' => $count . ' order' . ($count === 1 ? '' : 's') . ' deleted.']);
+        return response()->json(['message' => $count.' order'.($count === 1 ? '' : 's').' deleted.']);
     }
 }

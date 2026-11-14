@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AdminResource;
+use App\Models\Order;
 use App\Models\PackagePayment;
 use App\Models\Payment;
 use App\Support\AdminList;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -26,6 +28,11 @@ class PaymentController extends Controller
                 AllowedFilter::exact('payment_method'),
                 AllowedFilter::exact('order_id'),
                 AllowedFilter::exact('customer', 'user_id'),
+                // Payments on orders matching the dashboard's filters (its arrow to this list carries them).
+                ...array_map(
+                    fn (string $key) => AllowedFilter::callback($key, fn (Builder $q, $v) => $q->whereHas('order', fn (Builder $o) => $o->matching([$key => $v]))),
+                    [...Order::ITEM_FILTERS, ...Order::STATUS_FILTERS],
+                ),
                 ...AdminList::dateRange(),
             ])
             ->allowedSorts(['id', 'amount', 'payment_method', 'created_at'])
@@ -36,7 +43,7 @@ class PaymentController extends Controller
 
     public function showOrderPayment(int $id)
     {
-        return new AdminResource(Payment::with(['order', 'customer:id,name,phone,email', 'createdBy:id,name'])->findOrFail($id));
+        return new AdminResource(Payment::with(['order', 'customer:id,name,phone,email', 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id));
     }
 
     public function packagePayments(Request $request)
@@ -58,6 +65,6 @@ class PaymentController extends Controller
 
     public function showPackagePayment(int $id)
     {
-        return new AdminResource(PackagePayment::with(['package', 'customer:id,name,phone,email', 'createdBy:id,name'])->findOrFail($id));
+        return new AdminResource(PackagePayment::with(['package', 'customer:id,name,phone,email', 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id));
     }
 }

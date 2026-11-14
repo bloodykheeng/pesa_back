@@ -49,3 +49,11 @@ Production sends through MailDog (password in `deployment/contabo/mails maildog.
 Every create, edit and delete of the main models, and every sign-in, is recorded in `activity_log`; admins read it
 at `/api/admin/audit-trail`. See [audit-trail.md](audit-trail.md). A missing record answers 404 with
 "This record no longer exists. It may have been deleted." (`bootstrap/app.php`), never the model class.
+
+## Dashboard filters
+
+`GET /api/admin/dashboard` takes `from`, `to` and the order filters `product`, `inventory_type`, `product_category`,
+`electronic_category`, `delivery_status`, `payment_status`, `payment_mode`. `GET /api/admin/orders` and
+`GET /api/admin/payments` take the same keys as `filter[...]`: all three go through `Order::scopeMatching` (an order
+matches when any of its items does), so a figure and its list agree. `GET /api/admin/users/{id}` is open to Editors
+for customer accounts (an order's customer); staff accounts stay Admin-only.

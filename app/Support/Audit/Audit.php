@@ -271,6 +271,8 @@ final class Audit
             'path' => '/'.ltrim($request->path(), '/'),
             'ip' => $request->ip(),
             'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
+            // Frozen with the entry: "Chrome 158 on Windows", "The app on Android 14".
+            'device' => Device::describe($request->userAgent()),
         ];
     }
 
