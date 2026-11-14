@@ -56,15 +56,26 @@ What each client sends:
 ## The MySQL session is pinned to UTC
 
 `config/database.php` sets `'timezone' => env('DB_TIMEZONE', '+00:00')` on the mysql and mariadb connections.
-MySQL converts `TIMESTAMP` columns (every `created_at`, `lastlogin`) with the **session** timezone, on write and on
-read. The development laptop's MySQL runs on Kampala time (`@@system_time_zone` = E. Africa Standard Time), so it read
-every one 3 hours late: the same user row reads `created_at=2025-11-05 00:55:00` under `SYSTEM` and the true
-`2025-11-04 21:55:00` under `+00:00`. Pinned, it is right on any machine.
 
-Why it is safe on production: the data came over in a mysqldump, which writes `TIMESTAMP`s in UTC
-(`SET TIME_ZONE='+00:00'`), and the stored values are true UTC (orders fall 04:00 to 23:00 UTC, 7 am to 2 am in
-Kampala; at a 3-hour shift they would run 10 am to 5 am). Where the server's MySQL is already UTC nothing changes.
-Check after a deploy: `select @@session.time_zone` through the app gives `+00:00`.
+What it does and does not fix (checked 14 Nov 2026 against the MySQL manual and the data):
+
+- MySQL converts a `TIMESTAMP` (every `created_at`, `lastlogin`) from the session zone to UTC on write and back on
+  read; `DATETIME` is never converted. **Written and read under the same zone, a `TIMESTAMP` round-trips exactly**,
+  whatever that zone is. Proof: Alpha (no pin, MySQL on Kampala time) has `notifications.start_date` (`DATETIME`)
+  written with `created_at`; under its own zone all 136 rows agree, under a forced `+00:00` none do. Alpha and
+  Letshego are correct as they are, and pinning them would shift their existing rows.
+- **The error comes when the write zone and the read zone differ**: data moved between servers set to different
+  zones (a mysqldump stores `TIMESTAMP`s in UTC), or a server whose zone changes. Elevate's local database is a copy of
+  production (written under UTC) read on a laptop whose MySQL runs on Kampala time: the same user row reads
+  `created_at=2025-11-05 00:55:00` under `SYSTEM` and the true `2025-11-04 21:55:00` under `+00:00`.
+- The pin makes every read and write UTC, so moving the data (the Hostinger to Contabo migration, a production copy on
+  a laptop) no longer matters. The cost: rows written earlier under a non-UTC session read shifted once it is on. On
+  this laptop that is the rows written here since the copy (test and e2e activity); on production it would be the
+  rows written since the migration **if** the Contabo MySQL is not on UTC.
+
+**Before deploying it**: on the server, `timedatectl` and `mysql -e "select @@global.time_zone, @@system_time_zone"`.
+UTC: the pin changes nothing there and is safe. Anything else: rows written on Contabo since the migration were stored
+under that zone; decide before deploying (remove the pin, or convert those rows).
 
 ## What was fixed on 14 Nov 2026
 
