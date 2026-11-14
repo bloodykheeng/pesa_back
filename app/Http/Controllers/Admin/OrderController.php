@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -81,7 +80,7 @@ class OrderController extends Controller
 
     /**
      * POST /api/admin/orders: an order entered by staff for a customer. The same shape as one placed in the app
-     * (a random order number, charged = the items' total, nothing paid yet, the BNPL rule), plus:
+     * (an ORD number from the order's model, charged = the items' total, nothing paid yet, the BNPL rule), plus:
      * - placed_at: when it was really placed (Kampala wall-clock or an instant; a bare day = its first moment),
      *   never in the future, so a lost order goes back to its date. Payments are recorded afterwards.
      * - deduct_stock: take the items out of stock, as the app does (off when stock was already corrected).
@@ -113,12 +112,7 @@ class OrderController extends Controller
         $order = DB::transaction(function () use ($data, $placedAt, $customer, $staff) {
             $total = array_sum(array_map(fn ($i) => (float) $i['price'] * (int) $i['quantity'], $data['items']));
 
-            do {
-                $number = strtoupper(Str::random(10));
-            } while (Order::where('order_number', $number)->exists());
-
             $order = Order::forceCreate([
-                'order_number' => $number,
                 'status' => $data['status'] ?? 'pending',
                 'delivery_status' => $data['delivery_status'] ?? 'pending',
                 'payment_status' => 'pending',

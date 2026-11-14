@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasSerialNumber;
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -10,7 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class PackagePayment extends Model implements HasSnapshotSchema
 {
-    use HasFactory;
+    use HasFactory, HasSerialNumber;
+
+    /** Our receipt number: PPAY + the Kampala month (MMYYYY) + a counter. Never reused (docs/reference-numbers.md). */
+    public const SERIAL_COLUMN = 'receipt_number';
+
+    public const SERIAL_PREFIX = 'PPAY';
 
     protected $fillable = [
         'package_id', 'user_id', 'amount', 'payment_method', 'created_by',
@@ -41,6 +47,7 @@ class PackagePayment extends Model implements HasSnapshotSchema
     public static function snapshotSchema(): array
     {
         return [
+            'receipt_number' => ['label' => 'Receipt number', 'type' => 'string'],
             'package_id' => ['label' => 'Package', 'type' => 'relation', 'resolve' => Snapshot::nameOf(Package::class)],
             'user_id' => ['label' => 'Customer', 'type' => 'relation', 'resolve' => Snapshot::nameOf(User::class)],
             'amount' => ['label' => 'Amount', 'type' => 'money'],

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasSerialNumber;
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -10,7 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Package extends Model implements HasSnapshotSchema
 {
-    use HasFactory;
+    use HasFactory, HasSerialNumber;
+
+    /** Package numbers: PKG + the Kampala month (MMYYYY) + a counter, e.g. PKG1120262. Never reused (docs/reference-numbers.md). */
+    public const SERIAL_COLUMN = 'package_number';
+
+    public const SERIAL_PREFIX = 'PKG';
 
     protected $fillable = [
         'name',

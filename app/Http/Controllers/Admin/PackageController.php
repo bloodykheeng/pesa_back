@@ -12,7 +12,6 @@ use App\Support\AdminList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -90,13 +89,8 @@ class PackageController extends Controller
         $customer = User::findOrFail($data['customer_id']);
         $staff = $request->user();
 
-        do {
-            $number = strtoupper(Str::random(10));
-        } while (Package::where('package_number', $number)->exists());
-
         $package = new Package;
         $package->forceFill([
-            'package_number' => $number,
             'name' => $data['name'],
             'pickup' => $data['pickup'],
             'destination' => $data['destination'],
@@ -118,7 +112,7 @@ class PackageController extends Controller
         $package->save();
 
         return response()->json([
-            'message' => 'Package #'.$number.' entered for '.$customer->name.'.',
+            'message' => 'Package #'.$package->package_number.' entered for '.$customer->name.'.',
             'data' => new AdminResource($package->load('createdBy:id,name,phone,email', 'enteredBy:id,name')),
         ], 201);
     }

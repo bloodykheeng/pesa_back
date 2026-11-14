@@ -139,11 +139,7 @@ class PackageController extends Controller
 
         // Handle the photo upload
         $photoData = $this->handlePhotoUpload($request->file('photo'), 'package_photos');
-
-        // Generate a unique order number
-        do {
-            $packageNumber = strtoupper(Str::random(10));
-        } while (Package::where('package_number', $packageNumber)->exists());
+        // The package number (PKG + month + counter) comes from the model: HasSerialNumber.
 
         $package = Package::create(array_merge([
             'name' => $validated['name'],
@@ -152,7 +148,6 @@ class PackageController extends Controller
             'photo_url' => $photoData['photo_url'] ?? null,
             'status' => $validated['status'] ?? 'pending',
             'extraInfo' => $validated['extraInfo'],
-            'package_number' => $packageNumber,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
             'charged_amount' => $validated['charged_amount'] ?? 0,
@@ -172,7 +167,7 @@ class PackageController extends Controller
                 \App\Support\Push::send(
                     $user->device_token,
                     'New Package Order',
-                    'Package order #' . $packageNumber . ' has been created successfully'
+                    'Package order #' . $package->package_number . ' has been created successfully'
                 );
             }
 

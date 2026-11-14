@@ -233,13 +233,7 @@ class OrderController extends Controller
 
             // Start a database transaction
             DB::beginTransaction();
-
-            // Generate a unique order number
-            do {
-                $orderNumber = strtoupper(Str::random(10));
-            } while (Order::where('order_number', $orderNumber)->exists());
-
-            // $orderNumber = strtoupper(Str::uuid()->toString());
+            // The order number (ORD + month + counter) comes from the model: HasSerialNumber.
 
             // Create the Order
             $order = Order::create([
@@ -251,7 +245,6 @@ class OrderController extends Controller
                 'delivery_status' => 'pending',
                 'payment_mode' => $validated['payment_mode'],
                 'balance_due' => $validated['amount'],
-                'order_number' => $orderNumber,
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
@@ -284,7 +277,7 @@ class OrderController extends Controller
             if (isset($user->device_token)) {
                 try {
 
-                    \App\Support\Push::send($user->device_token, 'New Order', 'Order ' . $orderNumber . ' created successfully', );
+                    \App\Support\Push::send($user->device_token, 'New Order', 'Order ' . $order->order_number . ' created successfully', );
                 } catch (\Kreait\Firebase\Exception\Messaging\NotFound $e) {
                     // Log the error or update the user that their device token is invalid
                     // Log::error('Device token not found for user: ' . $user->id . ' - ' . $e->getMessage());

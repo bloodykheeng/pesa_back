@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasSerialNumber;
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,7 +12,12 @@ use Illuminate\Support\Arr;
 
 class Order extends Model implements HasSnapshotSchema
 {
-    use HasFactory;
+    use HasFactory, HasSerialNumber;
+
+    /** Order numbers: ORD + the Kampala month (MMYYYY) + a counter, e.g. ORD1120265. Never reused (docs/reference-numbers.md). */
+    public const SERIAL_COLUMN = 'order_number';
+
+    public const SERIAL_PREFIX = 'ORD';
 
     protected $fillable = [
         'status',

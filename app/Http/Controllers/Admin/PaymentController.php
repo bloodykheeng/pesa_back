@@ -76,7 +76,7 @@ class PaymentController extends Controller
         $query = QueryBuilder::for(Payment::class)
             ->with(['order:id,order_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name'])
             ->allowedFilters([
-                AdminList::search(['transaction_number', 'details', 'order.order_number', 'customer.name', 'customer.phone']),
+                AdminList::search(['receipt_number', 'transaction_number', 'details', 'order.order_number', 'customer.name', 'customer.phone']),
                 AllowedFilter::exact('payment_method'),
                 AllowedFilter::exact('order_id'),
                 AllowedFilter::exact('customer', 'user_id'),
@@ -87,7 +87,7 @@ class PaymentController extends Controller
                 ),
                 ...AdminList::dateRange(),
             ])
-            ->allowedSorts(['id', 'amount', 'payment_method', 'created_at'])
+            ->allowedSorts(['id', 'receipt_number', 'amount', 'payment_method', 'created_at'])
             ->defaultSort('-created_at');
 
         return AdminResource::collection(AdminList::paginate($query, $request));
@@ -103,13 +103,13 @@ class PaymentController extends Controller
         $query = QueryBuilder::for(PackagePayment::class)
             ->with(['package:id,name,package_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name'])
             ->allowedFilters([
-                AdminList::search(['transaction_number', 'details', 'package.name', 'package.package_number', 'customer.name', 'customer.phone']),
+                AdminList::search(['receipt_number', 'transaction_number', 'details', 'package.name', 'package.package_number', 'customer.name', 'customer.phone']),
                 AllowedFilter::exact('payment_method'),
                 AllowedFilter::exact('package_id'),
                 AllowedFilter::exact('customer', 'user_id'),
                 ...AdminList::dateRange(),
             ])
-            ->allowedSorts(['id', 'amount', 'payment_method', 'created_at'])
+            ->allowedSorts(['id', 'receipt_number', 'amount', 'payment_method', 'created_at'])
             ->defaultSort('-created_at');
 
         return AdminResource::collection(AdminList::paginate($query, $request));
