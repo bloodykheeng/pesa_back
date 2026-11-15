@@ -12,6 +12,7 @@ use App\Support\AdminList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -36,7 +37,7 @@ class PackageController extends Controller
     public function index(Request $request)
     {
         $query = QueryBuilder::for(Package::class)
-            ->with('createdBy:id,name,phone,email', 'enteredBy:id,name')
+            ->with('createdBy:id,name,phone,email', 'enteredBy:id,name,email')
             ->allowedFilters([
                 AdminList::search(['name', 'package_number', 'order_number', 'pickup', 'destination', 'createdBy.name', 'createdBy.phone']),
                 AllowedFilter::exact('status'),
@@ -59,8 +60,8 @@ class PackageController extends Controller
     {
         return new AdminResource(Package::with([
             'createdBy:id,name,phone,email,photo_url',
-            'updatedBy:id,name',
-            'enteredBy:id,name',
+            'updatedBy:id,name,email',
+            'enteredBy:id,name,email',
             'payments' => fn ($q) => $q->latest(),
             'payments.createdBy:id,name',
         ])->findOrFail($id));
@@ -113,7 +114,7 @@ class PackageController extends Controller
 
         return response()->json([
             'message' => 'Package #'.$package->package_number.' entered for '.$customer->name.'.',
-            'data' => new AdminResource($package->load('createdBy:id,name,phone,email', 'enteredBy:id,name')),
+            'data' => new AdminResource($package->load('createdBy:id,name,phone,email', 'enteredBy:id,name,email')),
         ], 201);
     }
 
@@ -167,7 +168,7 @@ class PackageController extends Controller
             $this->payments->push($package->created_by, 'Package update', 'Package "'.$package->name.'" is now '.$data['delivery_status'].'.');
         }
 
-        return response()->json(['message' => 'Package saved.', 'data' => new AdminResource($package->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name']))]);
+        return response()->json(['message' => 'Package saved.', 'data' => new AdminResource($package->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name,email']))]);
     }
 
     /** POST /api/admin/packages/{id}/payments */
@@ -198,11 +199,11 @@ class PackageController extends Controller
             return response()->json(['message' => 'These have payments and cannot be deleted: '.$paid->implode(', ').'. Cancel them instead.'], 422);
         }
 
+        // All or nothing: a refused delete (a restricted foreign key) rolls back the ones before it, and the
+        // photos go only once every package is gone.
         $packages = Package::whereIn('id', $ids)->get();
-        $packages->each(function (Package $p) {
-            $p->delete();
-            $this->deletePhoto($p->photo_url);
-        });
+        DB::transaction(fn () => $packages->each(fn (Package $p) => $p->delete()));
+        $packages->each(fn (Package $p) => $this->deletePhoto($p->photo_url));
 
         return response()->json(['message' => $packages->count().' package'.($packages->count() === 1 ? '' : 's').' deleted.']);
     }

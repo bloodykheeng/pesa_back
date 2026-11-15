@@ -42,7 +42,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $query = QueryBuilder::for(Order::class)
-            ->with('createdBy:id,name,phone,email', 'enteredBy:id,name')
+            ->with('createdBy:id,name,phone,email', 'enteredBy:id,name,email')
             ->withCount('orderProducts')
             ->allowedFilters([
                 AdminList::search(['order_number', 'address', 'createdBy.name', 'createdBy.phone', 'createdBy.email']),
@@ -68,8 +68,8 @@ class OrderController extends Controller
     {
         $order = Order::with([
             'createdBy:id,name,phone,email,photo_url',
-            'updatedBy:id,name',
-            'enteredBy:id,name',
+            'updatedBy:id,name,email',
+            'enteredBy:id,name,email',
             'orderProducts.product:id,name,photo_url',
             'payments' => fn ($q) => $q->latest(),
             'payments.createdBy:id,name',
@@ -136,7 +136,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'Order #'.$order->order_number.' entered for '.$customer->name.'.',
-            'data' => new AdminResource($order->load('createdBy:id,name,phone,email', 'enteredBy:id,name')),
+            'data' => new AdminResource($order->load('createdBy:id,name,phone,email', 'enteredBy:id,name,email')),
         ], 201);
     }
 
@@ -244,7 +244,7 @@ class OrderController extends Controller
             $this->payments->push($order->created_by, 'Order update', 'Order #'.$order->order_number.' is now '.$data['status'].'.');
         }
 
-        return response()->json(['message' => 'Order #'.$order->order_number.' saved.', 'data' => new AdminResource($order->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name']))]);
+        return response()->json(['message' => 'Order #'.$order->order_number.' saved.', 'data' => new AdminResource($order->fresh(['createdBy:id,name,phone,email', 'enteredBy:id,name,email']))]);
     }
 
     /** @return array<string, mixed> the item rules, shared by New and Edit */

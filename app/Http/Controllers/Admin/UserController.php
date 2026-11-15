@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AccountEmails;
 use App\Support\AdminList;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -163,11 +164,20 @@ class UserController extends Controller
         }
 
         $users = User::whereIn('id', $ids)->get();
-        DB::transaction(fn () => $users->each(function (User $u) {
-            $u->tokens()->delete();
-            $u->syncRoles([]);
-            $u->delete();
-        }));
+        try {
+            DB::transaction(fn () => $users->each(function (User $u) {
+                $u->tokens()->delete();
+                $u->syncRoles([]);
+                $u->delete();
+            }));
+        } catch (QueryException $e) {
+            // An account that has made or changed anything (payments, catalogue, chat) is kept: the database refuses
+            // (docs/foreign-key-conventions.md) and the whole batch rolls back.
+            if (($e->errorInfo[1] ?? null) === 1451) {
+                return response()->json(['message' => 'Some of these accounts have made or changed records (payments, products, messages...), so nothing was deleted. Make them inactive instead.'], 409);
+            }
+            throw $e;
+        }
         $users->each(fn (User $u) => $this->deletePhoto($u->photo_url));
 
         return response()->json(['message' => $users->count().' account'.($users->count() === 1 ? '' : 's').' deleted.']);

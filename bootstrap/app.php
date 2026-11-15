@@ -30,4 +30,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json(['message' => 'This record no longer exists. It may have been deleted.'], 404);
             }
         });
+
+        // A delete the database refuses because other records still point at the row (RESTRICT foreign keys,
+        // docs/foreign-key-conventions.md) reads as 409 in plain words, never a 500 with raw SQL. Errno 1451 is only
+        // "a parent row is still referenced"; a child insert failing its own key is 1452 and keeps default handling.
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, \Illuminate\Http\Request $request) {
+            if (($e->errorInfo[1] ?? null) === 1451 && ($request->expectsJson() || $request->is('api/*'))) {
+                return response()->json([
+                    'message' => 'This is still used by other records (orders, payments, products...), so it was not deleted. Make it inactive instead, or remove those records first.',
+                ], 409);
+            }
+
+            return null;
+        });
     })->create();

@@ -25,7 +25,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $query = QueryBuilder::for(AdminNotification::class)
-            ->with('createdBy:id,name')
+            ->with('createdBy:id,name,email')
             ->allowedFilters([
                 AdminList::search(['title', 'body']),
                 AllowedFilter::exact('status'),
@@ -40,7 +40,7 @@ class NotificationController extends Controller
 
     public function show(int $id)
     {
-        return new AdminResource(AdminNotification::with('createdBy:id,name')->findOrFail($id));
+        return new AdminResource(AdminNotification::with('createdBy:id,name,email')->findOrFail($id));
     }
 
     /** GET /api/admin/notifications/{id}/recipients */

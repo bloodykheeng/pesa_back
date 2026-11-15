@@ -42,7 +42,7 @@ class CatalogController extends Controller
     public function show(string $resource, int $id)
     {
         $config = Catalog::get($resource);
-        $record = $config['model']::with([...$this->includes($config), 'updatedBy:id,name'])->withCount($config['counts'])->findOrFail($id);
+        $record = $config['model']::with([...$this->includes($config), 'updatedBy:id,name,email'])->withCount($config['counts'])->findOrFail($id);
 
         return new AdminResource($record);
     }
@@ -124,7 +124,7 @@ class CatalogController extends Controller
     {
         $hasCreator = collect($config['include'])->contains(fn ($i) => str_starts_with($i, 'createdBy'));
 
-        return $hasCreator ? $config['include'] : [...$config['include'], 'createdBy:id,name'];
+        return $hasCreator ? $config['include'] : [...$config['include'], 'createdBy:id,name,email'];
     }
 
     private function only(array $data, array $config): array

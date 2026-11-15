@@ -56,7 +56,7 @@ class ProductController extends Controller
 
     public function show(int $id)
     {
-        return new AdminResource(Product::with([...self::RELATIONS, 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id));
+        return new AdminResource(Product::with([...self::RELATIONS, 'createdBy:id,name,email', 'updatedBy:id,name,email'])->findOrFail($id));
     }
 
     public function store(Request $request): JsonResponse

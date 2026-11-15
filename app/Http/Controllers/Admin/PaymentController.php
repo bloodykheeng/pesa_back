@@ -74,7 +74,7 @@ class PaymentController extends Controller
     public function orderPayments(Request $request)
     {
         $query = QueryBuilder::for(Payment::class)
-            ->with(['order:id,order_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name'])
+            ->with(['order:id,order_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name,email'])
             ->allowedFilters([
                 AdminList::search(['receipt_number', 'transaction_number', 'details', 'order.order_number', 'customer.name', 'customer.phone']),
                 AllowedFilter::exact('payment_method'),
@@ -95,13 +95,13 @@ class PaymentController extends Controller
 
     public function showOrderPayment(int $id)
     {
-        return new AdminResource(Payment::with(['order', 'customer:id,name,phone,email', 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id));
+        return new AdminResource(Payment::with(['order', 'customer:id,name,phone,email', 'createdBy:id,name,email', 'updatedBy:id,name,email'])->findOrFail($id));
     }
 
     public function packagePayments(Request $request)
     {
         $query = QueryBuilder::for(PackagePayment::class)
-            ->with(['package:id,name,package_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name'])
+            ->with(['package:id,name,package_number,charged_amount,balance_due', 'customer:id,name,phone', 'createdBy:id,name,email'])
             ->allowedFilters([
                 AdminList::search(['receipt_number', 'transaction_number', 'details', 'package.name', 'package.package_number', 'customer.name', 'customer.phone']),
                 AllowedFilter::exact('payment_method'),
@@ -117,6 +117,6 @@ class PaymentController extends Controller
 
     public function showPackagePayment(int $id)
     {
-        return new AdminResource(PackagePayment::with(['package', 'customer:id,name,phone,email', 'createdBy:id,name', 'updatedBy:id,name'])->findOrFail($id));
+        return new AdminResource(PackagePayment::with(['package', 'customer:id,name,phone,email', 'createdBy:id,name,email', 'updatedBy:id,name,email'])->findOrFail($id));
     }
 }
