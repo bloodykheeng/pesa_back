@@ -53,8 +53,8 @@ class ElectronicBrandController extends Controller
     // Index function for app to get a list of electronic brands
     public function indexForApp(Request $request)
     {
-        // Build the query with eager loading
-        $query = ElectronicBrand::with(['electronicCategory', 'createdBy', 'updatedBy']);
+        // Fuel brands the app may show (App\Traits\ShownInApp).
+        $query = ElectronicBrand::shownInApp()->with(['electronicCategory', 'createdBy', 'updatedBy']);
 
         // Filters
         $categoryId = $request->query('electronic_categories_id');

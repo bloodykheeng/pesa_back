@@ -75,7 +75,7 @@ class AuditTrailTest extends AdminTestCase
 
         $entry = $this->entriesFor($brand)->last();
         $this->assertSame('updated', $entry->event);
-        $this->assertSame('Electronic brands', $entry->log_name);
+        $this->assertSame('Fuel brands', $entry->log_name);
         $this->assertSame('admin', $entry->properties['source']);
         $changes = $entry->properties['changes'];
         $this->assertSame(['Category', 'Status'], array_column($changes, 'label'), 'only what changed, in the form\'s order');

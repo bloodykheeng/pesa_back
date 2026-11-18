@@ -61,7 +61,7 @@ class OptionsController extends Controller
             $s = $sides[$type->id] ?? null;
             $type->side = $s && $s->electronics && ! $s->gas ? 'electronics'
                 : ($s && $s->gas && ! $s->electronics ? 'gas_water'
-                : (preg_match('/electronic/i', $type->name) ? 'electronics' : 'gas_water'));
+                : (preg_match('/electronic|fuel/i', $type->name) ? 'electronics' : 'gas_water'));
 
             return $type;
         });

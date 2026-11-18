@@ -57,7 +57,8 @@ class ProductCategoryController extends Controller
     public function app_index(Request $request)
     {
         // Build the query with eager loading
-        $query = ProductCategory::with(['brands', 'createdBy', 'updatedBy']);
+        // The app sees Active categories and their Active brands only (App\Traits\ShownInApp).
+        $query = ProductCategory::shownInApp()->with(['brands' => fn ($q) => $q->shownInApp(), 'createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');

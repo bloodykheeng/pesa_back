@@ -13,8 +13,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        // Build the query with eager loading
-        $query = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
+        // The app (a customer) sees shown products only (App\Traits\ShownInApp); staff on the old routes see all.
+        $query = Product::query()->when(! $request->user()?->hasAnyRole(\App\Models\User::STAFF_ROLES), fn ($q) => $q->shownInApp())->with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
 
         // Get the query parameters
         $categoryBrandId = $request->query('category_brands_id');
@@ -125,8 +125,8 @@ class ProductController extends Controller
 
     public function app_index(Request $request)
     {
-        // Build the query with eager loading
-        $query = Product::with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
+        // Shown products only (App\Traits\ShownInApp).
+        $query = Product::shownInApp()->with(['categoryBrand', 'productType', 'createdBy', 'updatedBy', 'inventoryType', 'electronicCategory', 'electronicBrand', 'electronicType']);
 
         // Get the query parameters
         $categoryBrandId = $request->query('category_brands_id');

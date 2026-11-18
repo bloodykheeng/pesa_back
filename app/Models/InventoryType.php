@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\ShownInApp;
+
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -10,6 +12,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class InventoryType extends Model implements HasSnapshotSchema
 {
+    use ShownInApp;
+
+    /** Shown in the app only when these parents are too (App\Traits\ShownInApp). */
+    protected static function appParents(): array
+    {
+        return [];
+    }
+
     use HasFactory;
 
     // Table name (optional, only needed if different from the model name in plural form)

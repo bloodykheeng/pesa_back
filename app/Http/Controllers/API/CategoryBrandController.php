@@ -69,7 +69,8 @@ class CategoryBrandController extends Controller
     public function app_index(Request $request)
     {
         // Build the query with eager loading
-        $query = CategoryBrand::with(['productCategory', 'products', 'createdBy', 'updatedBy']);
+        // The app sees shown brands and their shown products only (App\Traits\ShownInApp).
+        $query = CategoryBrand::shownInApp()->with(['productCategory', 'products' => fn ($q) => $q->shownInApp(), 'createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');

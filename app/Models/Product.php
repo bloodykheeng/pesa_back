@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\ShownInApp;
+
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -10,6 +12,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model implements HasSnapshotSchema
 {
+    use ShownInApp;
+
+    /** Shown in the app only when these parents are too (App\Traits\ShownInApp). */
+    protected static function appParents(): array
+    {
+        return [
+            'categoryBrand' => 'category_brands_id',
+            'productType' => 'product_types_id',
+            'inventoryType' => 'inventory_types_id',
+            'electronicCategory' => 'electronic_category_id',
+            'electronicBrand' => 'electronic_brand_id',
+            'electronicType' => 'electronic_type_id',
+        ];
+    }
+
     use HasFactory;
 
     protected $fillable = [

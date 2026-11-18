@@ -53,8 +53,8 @@ class ElectronicTypeController extends Controller
     // Index function for app to get a list of electronic types
     public function indexForApp(Request $request)
     {
-        // Build the query with eager loading
-        $query = ElectronicType::with(['electronicBrand.electronicCategory', 'createdBy', 'updatedBy']);
+        // Fuel types the app may show (App\Traits\ShownInApp).
+        $query = ElectronicType::shownInApp()->with(['electronicBrand.electronicCategory', 'createdBy', 'updatedBy']);
 
         // Filters
         $brandId = $request->query('electronic_brands_id');

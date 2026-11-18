@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Traits\ShownInApp;
+
 use App\Contracts\HasSnapshotSchema;
 use App\Support\Audit\Snapshot;
 
@@ -10,6 +12,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class ElectronicType extends Model implements HasSnapshotSchema
 {
+    use ShownInApp;
+
+    /** Shown in the app only when these parents are too (App\Traits\ShownInApp). */
+    protected static function appParents(): array
+    {
+        return [
+            'electronicBrand' => 'electronic_brands_id',
+        ];
+    }
+
     use HasFactory;
 
     protected $fillable = [
@@ -56,7 +68,7 @@ class ElectronicType extends Model implements HasSnapshotSchema
 
     public static function auditModule(): string
     {
-        return 'Electronic series';
+        return 'Fuel types';
     }
 
     public function auditTitle(): string

@@ -38,7 +38,8 @@ class ElectronicCategoryController extends Controller
       public function indexForApp(Request $request)
       {
           // Build the query with eager loading
-          $query = ElectronicCategory::with(['createdBy', 'updatedBy']);
+          // Fuel categories the app may show (App\Traits\ShownInApp).
+          $query = ElectronicCategory::shownInApp()->with(['createdBy', 'updatedBy']);
   
           // Filters
           $createdBy = $request->query('created_by');

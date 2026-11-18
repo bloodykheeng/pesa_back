@@ -57,7 +57,8 @@ class ProductTypeController extends Controller
     public function app_index(Request $request)
     {
         // Build the query with eager loading
-        $query = ProductType::with(['products', 'createdBy', 'updatedBy']);
+        // The app reads its products from here: shown types, shown products only (App\Traits\ShownInApp).
+        $query = ProductType::shownInApp()->with(['products' => fn ($q) => $q->shownInApp(), 'createdBy', 'updatedBy']);
 
         // Get the query parameters
         $code = $request->query('code');
